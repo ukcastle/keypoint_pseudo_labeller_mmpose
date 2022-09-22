@@ -1,0 +1,28 @@
+from pathlib import Path
+import json
+import shutil
+class JsonWriter:
+
+  def __init__(self, path) -> None:
+    self.filePath = Path(path)
+    self.outputDict = {}
+    self.loadFile()
+  
+  def loadFile(self):
+    if self.filePath.is_file():
+      with self.filePath.open("r") as f:
+        self.outputDict = json.load(f)  
+
+  def addElement(self, fileName:str , elementDict):
+
+    self.outputDict[fileName] = elementDict
+
+  def saveFile(self):
+    with self.filePath.open("w") as f:
+      json.dump(self.outputDict, f, indent=2)
+  
+  @staticmethod
+  def moveFile(path: Path, rootDir = "done"):
+    donePath = Path(rootDir,*(path.parts[1:]))
+    donePath.parent.mkdir(exist_ok=True, parents=True)
+    shutil.move(path, donePath)
