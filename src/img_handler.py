@@ -16,3 +16,8 @@ def drawFullCrossLine(img, x, y, imgW, imgH, color):
   cv2.line(img, (x,0), (x, imgH), color)
   cv2.line(img, (0,y), (imgW, y), color)
   return img
+
+def addPadding(x1, y1, x2, y2, padding, imgW, imgH):
+  x1, y1 = (max(p-padding, 0) for p in (x1, y1))
+  x2, y2 = (min(p+padding, length) for p, length in ((x2,imgW), (y2, imgH)))
+  return x1, y1, x2 ,y2
