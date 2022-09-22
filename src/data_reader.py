@@ -33,3 +33,4 @@ def getFullBbox(labels : dict):
 def drawBbox(img, imgW, imgH, imgPath):
   x1,y1,x2,y2 = getFullBbox(xywh2xyxy4Dict(getLabel(changePath(imgPath)), imgW, imgH))
   cv2.rectangle(img, (x1,y1), (x2,y2), (255,0,255),1)
+  return x1,y1,x2,y2
