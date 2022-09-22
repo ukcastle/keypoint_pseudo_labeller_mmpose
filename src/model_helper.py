@@ -21,7 +21,10 @@ KEYPOINTS = [
           "club_head" #총 15개
         ]
 
+from src.util import timeit
+
 class ModelHelper:
+  @timeit
   def __init__(self, configPath, weightPath, modelWidth=192, modelHeight=256, device="cuda:1"):
     self.model = init_pose_model(configPath, weightPath, device)
     self.model.eval()
@@ -33,6 +36,7 @@ class ModelHelper:
     self.device = device
     self.modelWidth = modelWidth
     self.modelHeight = modelHeight
+    self.center, self.scale = (bbox_xywh2cs((0,0,self.modelWidth,self.modelHeight), self.modelWidth/self.modelHeight))
   
   @staticmethod
   def forward_dummy(model, img, meta):
@@ -47,37 +51,56 @@ class ModelHelper:
 
     return torch.tensor(keypoint_result["preds"])
 
-  def inferenceModel(self, img, bbox):
-    x1,y1,x2,y2 = bbox
-    cropImg = img[y1:y2, x1:x2].copy()
-    cropImg = cv2.cvtColor(cropImg, cv2.COLOR_BGR2RGB)
-    cropH, cropW = cropImg.shape[:2]
+  # @timeit
+  def resizeWithLetterBox(self, inputImg):
+    img = inputImg.copy()
+    cropH, cropW = img.shape[:2]
     ratio = min(self.modelWidth/cropW, self.modelHeight/cropH)
     refineW, refineH = (int(x*ratio) for x in (cropW, cropH))
     dw = (self.modelWidth - refineW)/2
     dh = (self.modelHeight - refineH)/2
     top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
     left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
-    cropImg = cv2.resize(cropImg, (refineW, refineH), interpolation=cv2.INTER_LINEAR)
-    cropImg = cv2.copyMakeBorder(cropImg, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))
-    
-    cropImg = self.transform(cropImg)
-    cropImg = cropImg.unsqueeze(0)
-    cropImg = cropImg.to(self.device)
-    center, scale = (bbox_xywh2cs((0,0,self.modelWidth,self.modelHeight), self.modelWidth/self.modelHeight))
+    img = cv2.resize(img, (refineW, refineH), interpolation=cv2.INTER_LINEAR)
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(114, 114, 114))
+    return img, left, top, ratio
 
+  # @timeit
+  def makeInput(self, img):
+    outTensor = self.transform(img)
+    outTensor = outTensor.unsqueeze(0)
+    outTensor = outTensor.to(self.device)
     meta = [{
       "image_file" : "image",
-      "center" : center,
-      "scale" : scale,
-      "size" : (self.modelWidth, self.modelHeight),
-      "flip_pairs" : []
+      "center" : self.center,
+      "scale" : self.scale,
+      "size" : (self.modelWidth, self.modelHeight)
     }]
 
-    output = ModelHelper.forward_dummy(self.model, cropImg, meta)
-    output[:,:,0] = ((output[:,:,0] - left) / ratio).to(torch.int16)
-    output[:,:,1] = ((output[:,:,1] - top) / ratio).to(torch.int16)
+    return outTensor, meta
+  
+  @timeit
+  def inference(self, inputTensor, meta):
+    output = ModelHelper.forward_dummy(self.model, inputTensor, meta)
+    return output
+  
+  # @timeit
+  def refineOutput(self, output, leftPad, topPad, resizeRatio, x1, y1):
+    output[:,:,0] = ((output[:,:,0] - leftPad) / resizeRatio)
+    output[:,:,1] = ((output[:,:,1] - topPad) / resizeRatio)
     output[:,:,0] += x1
     output[:,:,1] += y1
+
+    return output[0].to(torch.int32).numpy().tolist()
+
+  def inferenceModel(self, img, bbox):
+
+    x1,y1,x2,y2 = bbox
+    cropImg = img[y1:y2, x1:x2]
+    cropImg = cv2.cvtColor(cropImg, cv2.COLOR_BGR2RGB)
+    cropImg, leftPad, topPad, resizeRatio = self.resizeWithLetterBox(cropImg)
+    inputTensor, meta = self.makeInput(cropImg)
+    output = self.inference(inputTensor, meta)
+    refinedOutput = self.refineOutput(output, leftPad, topPad, resizeRatio, x1, y1)
     
-    return output
+    return refinedOutput
