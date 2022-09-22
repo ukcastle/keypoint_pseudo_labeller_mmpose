@@ -1,4 +1,5 @@
 import cv2
+from src.util import timeit
 
 def drawCrossLine(img, x, y, crossLineHalf=10, color=(0,0,255)):
   cv2.line(img, (x-crossLineHalf,y), (x+crossLineHalf,y), color)
@@ -21,3 +22,42 @@ def addPadding(x1, y1, x2, y2, padding, imgW, imgH):
   x1, y1 = (max(p-padding, 0) for p in (x1, y1))
   x2, y2 = (min(p+padding, length) for p, length in ((x2,imgW), (y2, imgH)))
   return x1, y1, x2 ,y2
+
+def getSkeletons():
+  keyDict = {}
+  for value in dataset_info["keypoint_info"].values():
+    keyDict[value["name"]] = value["id"]
+
+  skeletonList = []
+  for value in dataset_info["skeleton_info"].values():
+    startId, endId = [keyDict[x] for x in value["link"]] 
+    skeletonList.append((startId, endId, value["color"]))
+
+  return skeletonList
+
+from .model.custom_golf import dataset_info
+@timeit
+def _drawKeyPointCircle(img, outputList):
+  for i,v in enumerate(outputList):
+    x,y,_ = [int(item) for item in v]
+    keyDict = dataset_info["keypoint_info"][i]
+    cv2.circle(img, (x,y), 2, keyDict["color"])
+
+
+@timeit
+def _drawSkeleton(img, skeletons, outputList):
+
+  for startIdx, endIdx, color in skeletons:
+    start = outputList[startIdx][:2]
+    end = outputList[endIdx][:2]
+    cv2.line(img, start, end, color)
+
+
+def drawImg(img, outputList, skeletons):
+  dst = img.copy()
+  
+  _drawKeyPointCircle(dst, outputList)
+  _drawSkeleton(dst, skeletons, outputList)
+
+  return dst
+  
