@@ -3,7 +3,8 @@ from pathlib import Path, PureWindowsPath
 from src.data_reader import drawBbox
 from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
-from src.point import ImagePointer, ImagePointerList
+from src.point import ImagePointer
+from src.coco_writer import COCO_dict
 
 class X_Y:
   def __init__(self) -> None:
@@ -25,7 +26,7 @@ VIS_THRESH = 0.6
 KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
 
 
-def oneImageProcess(modelHelper, imageList, strPath):
+def oneImageProcess(modelHelper, cocoDict : COCO_dict, strPath):
   imgPath = Path(strPath)
   img = cv2.imread(imgPath.as_posix())
   imgH,imgW = img.shape[:2]
@@ -52,7 +53,7 @@ def oneImageProcess(modelHelper, imageList, strPath):
     elif key==ord("a"):
       imagePointer.changeVis()
     elif key==ord("s"):
-      imageList.append(imagePointer)
+      cocoDict.updateDict(imagePointer.imgName, imagePointer.pointList, bbox, imgW, imgH)
       break
     elif key==27: # esc
       break
@@ -82,7 +83,7 @@ def oneImageProcess(modelHelper, imageList, strPath):
 def mouseEvent(event, x, y, flags, param):
   
   imgW, imgH, imagePointer, xy = param
-  xy.x, xy.y = x, y
+  xy.x, xy.y = min(x,imgW), y
   
   # 클릭할 때 Null이면 nearidx 찾기
   # 선택이 완료됐으면 History에 남기기
@@ -110,11 +111,9 @@ def mouseEvent(event, x, y, flags, param):
 
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
-  imageList = ImagePointerList()
-  oneImageProcess(modelHelper, imageList, "data\\input\\indor_semi_best\\images\\20201123_General_003_DIS_S_F20_SS_001_3832.jpg")
-  print(imageList.makeDictFromList())
-
-  # Bbox 그리고 Inference용 패딩 추가 이미지 만들기
+  cocoDict = COCO_dict()
+  oneImageProcess(modelHelper, cocoDict, "data\\input\\indor_semi_best\\images\\20201123_General_003_DIS_S_F20_SS_001_3832.jpg")
+  print(cocoDict)
   
  
 if __name__=="__main__":
