@@ -7,8 +7,8 @@ from src.point import ImagePointer, ImagePointerList
 
 class X_Y:
   def __init__(self) -> None:
-    self.X=0
-    self.Y=0
+    self.x=0
+    self.y=0
 
 SHOWNAME = "main"
 PAD = 50
@@ -39,7 +39,7 @@ def oneImageProcess(modelHelper, imageList, strPath):
   cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
   cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
   cv2.imshow(SHOWNAME,drawSkeleton(img, imagePointer(), SKELETONS))
-  xy = X_Y
+  xy = X_Y()
   cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer, xy))
   historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
   outputInfoDiv15 = int(imgH/15)
@@ -107,7 +107,7 @@ def mouseEvent(event, x, y, flags, param):
 
   elif event == cv2.EVENT_RBUTTONDOWN:
     imagePointer.rollback()
-    
+
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   imageList = ImagePointerList()
