@@ -77,38 +77,45 @@ class PointManager:
 
     return self.pointList.__repr__()
 
+from src.util import timeit
 
+# @timeit
 def mouseEvent(event, x, y, flags, param):
+  
   img, imgW, imgH, pm = param
   dst = img.copy()
+  
+  # 클릭할 때 Null이면 nearidx 찾기
+  # 선택이 완료됐으면 History에 남기기
   if event == cv2.EVENT_LBUTTONDOWN:
-    # 클릭할 때 Null이면 nearidx 찾기
     pm.nowClicked = True
     if pm.isNullSelect():
       pm.setSelected(pm.getNearIdx(x, y))
-
     if not pm.isNullSelect():
       pm.addHistory()
+
+  # 마우스 업일때 클릭된거 초기화해주기
   elif event == cv2.EVENT_LBUTTONUP:
-    # 마우스 업일때 클릭된거 초기화해주기
     pm.nowClicked = False
     if not pm.isNullSelect(): 
       pm.setSelected(None)
+
+  # 드래그할때 setpoint로 설정해주기
   elif event == cv2.EVENT_MOUSEMOVE:
     x = min(x, imgW)
     if pm.nowClicked:
-      # 드래그할때 setpoint로 설정해주기
       pm.setPoint(x,y)
     dst = drawSkeleton(dst, pm(), SKELETONS)
-    cropMat = getCropMatFromPoint(drawCrossLine(dst, x, y, color = (0,0,255)), x, y, PAD, imgW, imgH)
-    dst[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
-    dst = drawFullCrossLine(dst, x, y, imgW, imgH, (0,0,255))
-    cv2.imshow(SHOWNAME ,dst)
 
   elif event == cv2.EVENT_RBUTTONDOWN:
     pm.rollback()
-    dst = drawSkeleton(dst, pm(), SKELETONS)
-    cv2.imshow(SHOWNAME ,dst)
+
+  
+  dst = drawSkeleton(dst, pm(), SKELETONS)
+  cropMat = getCropMatFromPoint(drawCrossLine(dst, x, y, color = (0,0,255)), x, y, PAD, imgW, imgH)
+  dst[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
+  dst = drawFullCrossLine(dst, x, y, imgW, imgH, (0,0,255))
+  cv2.imshow(SHOWNAME ,dst)
 
   
 
