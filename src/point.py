@@ -1,5 +1,5 @@
 from math import sqrt
-
+from .model_helper import KEYPOINTS
 VISDICT = {0:"not exist", 1:"invisible", 2:"visible"}
 class ImagePointer:
   def __init__(self, outputList, bbox, imgName) -> None:
@@ -71,15 +71,3 @@ class ImagePointer:
 
   def __repr__(self) -> str:
     return self.pointList.__repr__()
-
-NAME = ["hand", "shaft", "club_head"]
-class ImageList(list):
-  def makeDictFromList(self):
-    fullDict = {}
-    for imagePointer in self:
-      elementDict = {}
-      for i, v in imagePointer.pointList:
-        x,y,vis = v
-        elementDict[NAME[i]] = {"x":x, "y":y, "vis":vis}
-      fullDict[imagePointer.imgName] = elementDict
-    return elementDict
