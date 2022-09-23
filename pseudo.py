@@ -4,12 +4,13 @@ from pathlib import Path
 SHOWNAME = "main"
 PAD = 50
 ZOOMRANGE= 300
+INFORANGE = 200
 VISDICT = {0:"not exist", 1:"invisible", 2:"visible"}
-
+HISTORY_SHOW_LEGNTH = 10
 from src.data_reader import drawBbox
 from src.img_handler import *
 from pathlib import Path
-from src.model_helper import ModelHelper
+from src.model_helper import ModelHelper, KEYPOINTS
 CONFIG = "src/model/golf_mobilenetv2_256x192.py"
 WEIGHT = "src/model/latest.pth"
 MODELWIDTH = 192
@@ -44,6 +45,8 @@ class PointManager:
   
   def changeVis(self):
     self.vis = (self.vis + 2) % 3
+    if self.curSelectIdx:
+      self.pointList[self.curSelectIdx][2] = self.vis
 
   def setPoint(self, x, y):
     if self.isNullSelect():
@@ -73,10 +76,11 @@ class PointManager:
     self.setPoint(x,y)
     self.setSelected(None)
 
-  def getHistoryTxt(self):
-    txtList = [f"vis = {self.vis}", "", "", ""] 
+  def getHistoryTxt(self,fullLength):
+    txtList = [""] * fullLength
+    txtList[0] = f"vis = {self.vis}" 
     historyLen = len(self.history)
-    for i in range(3):
+    for i in range(fullLength):
       if historyLen-1 < i:
         continue
       txtList[i+1] = str(self.history[-i-1])
@@ -94,7 +98,9 @@ from src.util import timeit
 def mouseEvent(event, x, y, flags, param):
   
   img, imgW, imgH, pm = param
-  dst = img.copy()
+
+  global lastX, lastY
+  lastX, lastY = x, y
   
   # 클릭할 때 Null이면 nearidx 찾기
   # 선택이 완료됐으면 History에 남기기
@@ -116,29 +122,11 @@ def mouseEvent(event, x, y, flags, param):
     x = min(x, imgW)
     if pm.nowClicked:
       pm.setPoint(x,y)
-    dst = drawSkeleton(dst, pm(), SKELETONS)
 
   elif event == cv2.EVENT_RBUTTONDOWN:
     pm.rollback()
 
-  historyTabDiv4 = int((imgH-ZOOMRANGE) / 4)
-  txtList = pm.getHistoryTxt()
-  for i in range(4):
-    cv2.putText(
-      dst, 
-      txtList[i], 
-      (imgW, ZOOMRANGE+historyTabDiv4*(i+1)-int(historyTabDiv4/3)), 
-      cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255))
-    
-
-  dst = drawSkeleton(dst, pm(), SKELETONS)
-  cropMat = getCropMatFromPoint(drawCrossLine(dst, x, y, color = (0,0,255)), x, y, PAD, imgW, imgH)
-  dst[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
-  dst = drawFullCrossLine(dst, x, y, imgW, imgH, (0,0,255))
-  cv2.imshow(SHOWNAME ,dst)
-
-  
-
+lastX, lastY = 0,0
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   
@@ -152,12 +140,18 @@ def main():
   output = modelHelper.inferenceModel(img, (x1,y1,x2,y2))
   pm = PointManager(output, bbox)
 
-  img = cv2.copyMakeBorder(img, 0, 0, 0, ZOOMRANGE, cv2.BORDER_CONSTANT) # 정보창
+  img = cv2.copyMakeBorder(img, 0, 0, 0, ZOOMRANGE+INFORANGE, cv2.BORDER_CONSTANT) # 정보창
   cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
-  
+  cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
   cv2.imshow(SHOWNAME,drawSkeleton(img, pm(), SKELETONS))
+
+  global outputMat 
+  global lastX, lastY
   cv2.setMouseCallback(SHOWNAME, mouseEvent, (img, imgW, imgH, pm))
+  historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
+  outputInfoDiv15 = int(imgH/15)
   while(True):
+    outputMat = img.copy()
     key = cv2.waitKey(1)
     if key in KEYMAP.keys():
       # 키보드로 인덱스 설정 대신 할수있게하기
@@ -167,5 +161,26 @@ def main():
     elif key==27: # esc
       exit(1)
 
+    txtList = pm.getHistoryTxt(HISTORY_SHOW_LEGNTH)
+    for i in range(HISTORY_SHOW_LEGNTH):
+      color = (0,0,255) if i==1 else (255,255,255)
+      cv2.putText(outputMat, txtList[i], 
+        (imgW, ZOOMRANGE+historyTabDiv4*(i+1)-int(historyTabDiv4/HISTORY_SHOW_LEGNTH)), 
+        cv2.FONT_HERSHEY_PLAIN, 1, color)
+    
+    for i in range(15):
+      color = (0,0,255) if i==pm.curSelectIdx else (255,255,255)
+      cv2.putText(outputMat, f"{KEYPOINTS[i]}", (imgW+ZOOMRANGE+10, outputInfoDiv15*(i)+15), 
+        cv2.FONT_HERSHEY_PLAIN, 1, color)
+      cv2.putText(outputMat, f"{pm()[i]}", (imgW+ZOOMRANGE+20, outputInfoDiv15*(i)+30), 
+        cv2.FONT_HERSHEY_PLAIN, 1, color)
+
+    outputMat = drawSkeleton(outputMat, pm(), SKELETONS)
+    outputMat = drawKeyPointCircle(outputMat, pm(), 5)
+    cropMat = getCropMatFromPoint(drawCrossLine(outputMat, lastX, lastY, color = (0,0,255)), lastX, lastY, PAD, imgW, imgH)
+    outputMat[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
+    outputMat = drawFullCrossLine(outputMat, lastX, lastY, imgW, imgH, (0,0,255))
+
+    cv2.imshow(SHOWNAME ,outputMat)
 if __name__=="__main__":
   main()
