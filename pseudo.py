@@ -42,6 +42,9 @@ class PointManager:
         return i
     return None
   
+  def changeVis(self):
+    self.vis = (self.vis + 2) % 3
+
   def setPoint(self, x, y):
     if self.isNullSelect():
       return
@@ -70,6 +73,14 @@ class PointManager:
     self.setPoint(x,y)
     self.setSelected(None)
 
+  def getHistoryTxt(self):
+    txtList = [f"vis = {self.vis}", "", "", ""] 
+    historyLen = len(self.history)
+    for i in range(3):
+      if historyLen-1 < i:
+        continue
+      txtList[i+1] = str(self.history[-i-1])
+    return txtList
   def __call__(self):
     return self.pointList
 
@@ -110,7 +121,16 @@ def mouseEvent(event, x, y, flags, param):
   elif event == cv2.EVENT_RBUTTONDOWN:
     pm.rollback()
 
-  
+  historyTabDiv4 = int((imgH-ZOOMRANGE) / 4)
+  txtList = pm.getHistoryTxt()
+  for i in range(4):
+    cv2.putText(
+      dst, 
+      txtList[i], 
+      (imgW, ZOOMRANGE+historyTabDiv4*(i+1)-int(historyTabDiv4/3)), 
+      cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255))
+    
+
   dst = drawSkeleton(dst, pm(), SKELETONS)
   cropMat = getCropMatFromPoint(drawCrossLine(dst, x, y, color = (0,0,255)), x, y, PAD, imgW, imgH)
   dst[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
@@ -142,7 +162,8 @@ def main():
     if key in KEYMAP.keys():
       # 키보드로 인덱스 설정 대신 할수있게하기
       pm.setSelected(KEYMAP[key])
-
+    elif key==ord("a"):
+      pm.changeVis()
     elif key==27: # esc
       exit(1)
 
