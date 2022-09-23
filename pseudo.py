@@ -3,14 +3,14 @@ from pathlib import Path, PureWindowsPath
 from src.data_reader import drawBbox
 from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
-from src.point import ImagePointer
+from src.point import ImagePointer, ImagePointerList
 
 
 from src.util import timeit
 
 def mouseEvent(event, x, y, flags, param):
   
-  imgW, imgH, pm = param
+  imgW, imgH, imagePointer = param
 
   global lastX, lastY
   lastX, lastY = x, y
@@ -18,26 +18,26 @@ def mouseEvent(event, x, y, flags, param):
   # 클릭할 때 Null이면 nearidx 찾기
   # 선택이 완료됐으면 History에 남기기
   if event == cv2.EVENT_LBUTTONDOWN:
-    pm.nowClicked = True
-    if pm.isNullSelect():
-      pm.setSelected(pm.getNearIdx(x, y))
-    if not pm.isNullSelect():
-      pm.addHistory()
+    imagePointer.nowClicked = True
+    if imagePointer.isNullSelect():
+      imagePointer.setSelected(imagePointer.getNearIdx(x, y))
+    if not imagePointer.isNullSelect():
+      imagePointer.addHistory()
 
   # 마우스 업일때 클릭된거 초기화해주기
   elif event == cv2.EVENT_LBUTTONUP:
-    pm.nowClicked = False
-    if not pm.isNullSelect(): 
-      pm.setSelected(None)
+    imagePointer.nowClicked = False
+    if not imagePointer.isNullSelect(): 
+      imagePointer.setSelected(None)
 
   # 드래그할때 setpoint로 설정해주기
   elif event == cv2.EVENT_MOUSEMOVE:
     x = min(x, imgW)
-    if pm.nowClicked:
-      pm.setPoint(x,y)
+    if imagePointer.nowClicked:
+      imagePointer.setPoint(x,y)
 
   elif event == cv2.EVENT_RBUTTONDOWN:
-    pm.rollback()
+    imagePointer.rollback()
 
 lastX, lastY = 0,0
 
@@ -55,7 +55,7 @@ SKELETONS = getSkeletons()
 VIS_THRESH = 0.6
 KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
   
-def oneImageProcess(modelHelper, strPath):
+def oneImageProcess(modelHelper, imageList, strPath):
   imgPath = Path(strPath)
   img = cv2.imread(imgPath.as_posix())
   imgH,imgW = img.shape[:2]
@@ -64,14 +64,14 @@ def oneImageProcess(modelHelper, strPath):
   x1,y1,x2,y2 = addPadding(*bbox, padding=30, imgW=imgW, imgH=imgH)
   output = modelHelper.inferenceModel(img, (x1,y1,x2,y2))
 
-  pm = ImagePointer(output, bbox, PureWindowsPath(*(imgPath.parts[1:])))
+  imagePointer = ImagePointer(output, bbox, PureWindowsPath(*(imgPath.parts[1:])))
   img = cv2.copyMakeBorder(img, 0, 0, 0, ZOOMRANGE+INFORANGE, cv2.BORDER_CONSTANT) # 정보창
   cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
   cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
-  cv2.imshow(SHOWNAME,drawSkeleton(img, pm(), SKELETONS))
+  cv2.imshow(SHOWNAME,drawSkeleton(img, imagePointer(), SKELETONS))
   global outputMat 
   global lastX, lastY
-  cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, pm))
+  cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer))
   historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
   outputInfoDiv15 = int(imgH/15)
   while(True):
@@ -79,13 +79,16 @@ def oneImageProcess(modelHelper, strPath):
     key = cv2.waitKey(1)
     if key in KEYMAP.keys():
       # 키보드로 인덱스 설정 대신 할수있게하기
-      pm.setSelected(KEYMAP[key])
+      imagePointer.setSelected(KEYMAP[key])
     elif key==ord("a"):
-      pm.changeVis()
+      imagePointer.changeVis()
+    elif key==ord("s"):
+      imageList.append(imagePointer)
+      break
     elif key==27: # esc
-      exit(1)
+      break
 
-    txtList = pm.getHistoryTxt(HISTORY_SHOW_LEGNTH)
+    txtList = imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH)
     for i in range(HISTORY_SHOW_LEGNTH):
       color = (0,0,255) if i==1 else (255,255,255)
       cv2.putText(outputMat, txtList[i], 
@@ -93,14 +96,14 @@ def oneImageProcess(modelHelper, strPath):
         cv2.FONT_HERSHEY_PLAIN, 1, color)
     
     for i in range(15):
-      color = (0,0,255) if i==pm.curSelectIdx else (255,255,255)
+      color = (0,0,255) if i==imagePointer.curSelectIdx else (255,255,255)
       cv2.putText(outputMat, f"{KEYPOINTS[i]}", (imgW+ZOOMRANGE+10, outputInfoDiv15*(i)+15), 
         cv2.FONT_HERSHEY_PLAIN, 1, color)
-      cv2.putText(outputMat, f"{pm()[i]}", (imgW+ZOOMRANGE+20, outputInfoDiv15*(i)+30), 
+      cv2.putText(outputMat, f"{imagePointer()[i]}", (imgW+ZOOMRANGE+20, outputInfoDiv15*(i)+30), 
         cv2.FONT_HERSHEY_PLAIN, 1, color)
 
-    outputMat = drawSkeleton(outputMat, pm(), SKELETONS)
-    outputMat = drawKeyPointCircle(outputMat, pm(), 5)
+    outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS)
+    outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
     cropMat = getCropMatFromPoint(drawCrossLine(outputMat, lastX, lastY, color = (0,0,255)), lastX, lastY, PAD, imgW, imgH)
     outputMat[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
     outputMat = drawFullCrossLine(outputMat, lastX, lastY, imgW, imgH, (0,0,255))
@@ -110,9 +113,9 @@ def oneImageProcess(modelHelper, strPath):
 
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
-  
-  oneImageProcess(modelHelper, "data\\input\\indor_semi_best\\images\\20201123_General_003_DIS_S_F20_SS_001_3832.jpg")
-  
+  imageList = ImagePointerList()
+  oneImageProcess(modelHelper, imageList, "data\\input\\indor_semi_best\\images\\20201123_General_003_DIS_S_F20_SS_001_3832.jpg")
+  print(imageList.makeDictFromList())
 
   # Bbox 그리고 Inference용 패딩 추가 이미지 만들기
   
