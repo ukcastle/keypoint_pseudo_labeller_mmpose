@@ -36,28 +36,21 @@ def getSkeletons():
   return skeletonList
 
 from .model.custom_golf import dataset_info
-@timeit
-def _drawKeyPointCircle(img, outputList):
+# @timeit
+def drawKeyPointCircle(img, outputList):
+  dst = img.copy()
   for i,v in enumerate(outputList):
     x,y,_ = [int(item) for item in v]
     keyDict = dataset_info["keypoint_info"][i]
-    cv2.circle(img, (x,y), 2, keyDict["color"])
+    cv2.circle(dst, (x,y), 2, keyDict["color"])
+  return dst
 
-
-@timeit
-def _drawSkeleton(img, skeletons, outputList):
-
+# @timeit
+def drawSkeleton(img, outputList, skeletons):
+  dst = img.copy()
   for startIdx, endIdx, color in skeletons:
     start = outputList[startIdx][:2]
     end = outputList[endIdx][:2]
-    cv2.line(img, start, end, color)
-
-
-def drawImg(img, outputList, skeletons):
-  dst = img.copy()
-  
-  _drawKeyPointCircle(dst, outputList)
-  _drawSkeleton(dst, skeletons, outputList)
-
+    cv2.line(dst, start, end, color)
   return dst
   
