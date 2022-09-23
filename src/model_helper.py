@@ -91,7 +91,7 @@ class ModelHelper:
     output[:,:,0] += x1
     output[:,:,1] += y1
 
-    return output[0].to(torch.int32).numpy().tolist()
+    return output[0].numpy().tolist()
 
   def inferenceModel(self, img, bbox):
 
