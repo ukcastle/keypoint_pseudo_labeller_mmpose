@@ -5,41 +5,10 @@ from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
 from src.point import ImagePointer, ImagePointerList
 
-
-from src.util import timeit
-
-def mouseEvent(event, x, y, flags, param):
-  
-  imgW, imgH, imagePointer = param
-
-  global lastX, lastY
-  lastX, lastY = x, y
-  
-  # 클릭할 때 Null이면 nearidx 찾기
-  # 선택이 완료됐으면 History에 남기기
-  if event == cv2.EVENT_LBUTTONDOWN:
-    imagePointer.nowClicked = True
-    if imagePointer.isNullSelect():
-      imagePointer.setSelected(imagePointer.getNearIdx(x, y))
-    if not imagePointer.isNullSelect():
-      imagePointer.addHistory()
-
-  # 마우스 업일때 클릭된거 초기화해주기
-  elif event == cv2.EVENT_LBUTTONUP:
-    imagePointer.nowClicked = False
-    if not imagePointer.isNullSelect(): 
-      imagePointer.setSelected(None)
-
-  # 드래그할때 setpoint로 설정해주기
-  elif event == cv2.EVENT_MOUSEMOVE:
-    x = min(x, imgW)
-    if imagePointer.nowClicked:
-      imagePointer.setPoint(x,y)
-
-  elif event == cv2.EVENT_RBUTTONDOWN:
-    imagePointer.rollback()
-
-lastX, lastY = 0,0
+class X_Y:
+  def __init__(self) -> None:
+    self.X=0
+    self.Y=0
 
 SHOWNAME = "main"
 PAD = 50
@@ -54,7 +23,8 @@ DEVICE = "cuda:1"
 SKELETONS = getSkeletons()
 VIS_THRESH = 0.6
 KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
-  
+
+
 def oneImageProcess(modelHelper, imageList, strPath):
   imgPath = Path(strPath)
   img = cv2.imread(imgPath.as_posix())
@@ -69,9 +39,8 @@ def oneImageProcess(modelHelper, imageList, strPath):
   cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
   cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
   cv2.imshow(SHOWNAME,drawSkeleton(img, imagePointer(), SKELETONS))
-  global outputMat 
-  global lastX, lastY
-  cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer))
+  xy = X_Y
+  cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer, xy))
   historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
   outputInfoDiv15 = int(imgH/15)
   while(True):
@@ -104,13 +73,41 @@ def oneImageProcess(modelHelper, imageList, strPath):
 
     outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS)
     outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
-    cropMat = getCropMatFromPoint(drawCrossLine(outputMat, lastX, lastY, color = (0,0,255)), lastX, lastY, PAD, imgW, imgH)
+    cropMat = getCropMatFromPoint(drawCrossLine(outputMat, xy.x, xy.y, color = (0,0,255)), xy.x, xy.y, PAD, imgW, imgH)
     outputMat[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
-    outputMat = drawFullCrossLine(outputMat, lastX, lastY, imgW, imgH, (0,0,255))
+    outputMat = drawFullCrossLine(outputMat, xy.x, xy.y, imgW, imgH, (0,0,255))
 
     cv2.imshow(SHOWNAME ,outputMat)
 
+def mouseEvent(event, x, y, flags, param):
+  
+  imgW, imgH, imagePointer, xy = param
+  xy.x, xy.y = x, y
+  
+  # 클릭할 때 Null이면 nearidx 찾기
+  # 선택이 완료됐으면 History에 남기기
+  if event == cv2.EVENT_LBUTTONDOWN:
+    imagePointer.nowClicked = True
+    if imagePointer.isNullSelect():
+      imagePointer.setSelected(imagePointer.getNearIdx(x, y))
+    if not imagePointer.isNullSelect():
+      imagePointer.addHistory()
 
+  # 마우스 업일때 클릭된거 초기화해주기
+  elif event == cv2.EVENT_LBUTTONUP:
+    imagePointer.nowClicked = False
+    if not imagePointer.isNullSelect(): 
+      imagePointer.setSelected(None)
+
+  # 드래그할때 setpoint로 설정해주기
+  elif event == cv2.EVENT_MOUSEMOVE:
+    x = min(x, imgW)
+    if imagePointer.nowClicked:
+      imagePointer.setPoint(x,y)
+
+  elif event == cv2.EVENT_RBUTTONDOWN:
+    imagePointer.rollback()
+    
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   imageList = ImagePointerList()
@@ -119,9 +116,6 @@ def main():
 
   # Bbox 그리고 Inference용 패딩 추가 이미지 만들기
   
-
-  
-
-  
+ 
 if __name__=="__main__":
   main()
