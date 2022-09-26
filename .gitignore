@@ -130,5 +130,5 @@ dmypy.json
 
 mmpose
 data
-output.json
+*.json
 src/model
