@@ -1,15 +1,11 @@
 import cv2
 from pathlib import Path, PurePosixPath
-from src.data_reader import drawBbox
+
+from src.data_reader import drawBbox, moveFile
 from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
 from src.point import ImagePointer, ImagePointerDict
 from src.coco_writer import COCO_dict
-
-class X_Y:
-  def __init__(self) -> None:
-    self.x=0
-    self.y=0
 
 SHOWNAME = "main"
 PAD = 50
@@ -18,13 +14,18 @@ INFORANGE = 200
 HISTORY_SHOW_LEGNTH = 9
 CONFIG = "src/model/golf_mobilenetv2_256x192.py"
 WEIGHT = "src/model/latest.pth"
-MODELWIDTH = 192
-MODELHEIGHT = 256
-DEVICE = "cuda:1"
 SKELETONS = getSkeletons()
 VIS_THRESH = 0.6
 KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
+MODELWIDTH = 192
+MODELHEIGHT = 256
+DEVICE = "cuda:1"
 ROOT = Path("data/input")
+
+class X_Y:
+  def __init__(self) -> None:
+    self.x=0
+    self.y=0
 
 def oneImageProcess(modelHelper, imgPath, value):
   img = cv2.imread(imgPath.as_posix())
@@ -113,13 +114,10 @@ def mouseEvent(event, x, y, flags, param):
   elif event == cv2.EVENT_RBUTTONDOWN:
     imagePointer.rollback()
 
-
-import json
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
-  cocoDict = COCO_dict()
+  cocoDict = COCO_dict("coco.json", "bbox.json")
   imgStorage = ImagePointerDict(ROOT)
-  jsonPath = Path("output.json")
   try:
     nextPath, value = imgStorage.next()
     while(True):
@@ -129,11 +127,13 @@ def main():
       nextPath, value = imgStorage.next() if isNext else imgStorage.back()
       print(imgStorage.curIdx)   
   finally:
-    # coco 저장
     for key, val in imgStorage.items():
       imgPath = PurePosixPath(*(key.split("/")[2:]))
       cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
-    with jsonPath.open("w") as f:
-      json.dump(cocoDict, f, indent=2)
+      moveFile(key)
+    # coco 저장
+    cocoDict.saveCOCO()
+    cocoDict.saveBbox()
+
 if __name__=="__main__":
   main()
