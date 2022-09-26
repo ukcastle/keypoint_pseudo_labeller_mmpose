@@ -3,7 +3,7 @@ from pathlib import Path, PureWindowsPath
 from src.data_reader import drawBbox
 from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
-from src.point import ImagePointer
+from src.point import ImagePointer, ImagePointerList
 from src.coco_writer import COCO_dict
 
 class X_Y:
@@ -24,18 +24,21 @@ DEVICE = "cuda:1"
 SKELETONS = getSkeletons()
 VIS_THRESH = 0.6
 KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
+ROOT = Path("data/input")
 
-
-def oneImageProcess(modelHelper, cocoDict : COCO_dict, strPath):
-  imgPath = Path(strPath)
+def oneImageProcess(modelHelper, imgPath, value):
   img = cv2.imread(imgPath.as_posix())
-  imgH,imgW = img.shape[:2]
+  if value is None:
+    imgH,imgW = img.shape[:2]
+    bbox = drawBbox(img, imgW, imgH, imgPath)
+    x1,y1,x2,y2 = addPadding(*bbox, padding=30, imgW=imgW, imgH=imgH)
+    output = modelHelper.inferenceModel(img, (x1,y1,x2,y2))
+    imagePointer = ImagePointer(output, bbox, imgPath)
+  else:
+    imgW, imgH = value["imgWH"]
+    imagePointer = value["imagePointer"]
+    bbox = drawBbox(img, imgW, imgH, imgPath)
 
-  bbox = drawBbox(img, imgW, imgH, imgPath)
-  x1,y1,x2,y2 = addPadding(*bbox, padding=30, imgW=imgW, imgH=imgH)
-  output = modelHelper.inferenceModel(img, (x1,y1,x2,y2))
-
-  imagePointer = ImagePointer(output, bbox, PureWindowsPath(*(imgPath.parts[1:])))
   img = cv2.copyMakeBorder(img, 0, 0, 0, ZOOMRANGE+INFORANGE, cv2.BORDER_CONSTANT) # 정보창
   cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
   cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
@@ -53,10 +56,11 @@ def oneImageProcess(modelHelper, cocoDict : COCO_dict, strPath):
     elif key==ord("a"):
       imagePointer.changeVis()
     elif key==ord("s"):
-      cocoDict.updateDict(imagePointer.imgName, imagePointer.pointList, bbox, imgW, imgH)
-      break
+      return True, (imagePointer, imgW, imgH)
+    elif key==ord("b"):
+      return False, (imagePointer, imgW, imgH)
     elif key==27: # esc
-      break
+      exit()
 
     txtList = imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH)
     for i in range(HISTORY_SHOW_LEGNTH):
@@ -109,12 +113,25 @@ def mouseEvent(event, x, y, flags, param):
   elif event == cv2.EVENT_RBUTTONDOWN:
     imagePointer.rollback()
 
+
+
+
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   cocoDict = COCO_dict()
-  oneImageProcess(modelHelper, cocoDict, "data\\input\\indor_semi_best\\images\\20201123_General_003_DIS_S_F20_SS_001_3832.jpg")
-  print(cocoDict)
-  
+  imgStorage = ImagePointerList(ROOT)
+  try:
+    nextPath, value = imgStorage.next()
+    while(True):
+      isNext, value = oneImageProcess(modelHelper, nextPath, value)
+      imagePointer, imgW, imgH = value
+      imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
+      nextPath, value = imgStorage.next() if isNext else imgStorage.back()
+      print(imgStorage.curIdx)   
+  finally:
+    print(imgStorage)
+  # 다음이미지, 이전 이미지 구현
+  # coco 저장, 불러오기 구현
  
 if __name__=="__main__":
   main()

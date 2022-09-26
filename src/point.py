@@ -1,5 +1,5 @@
 from math import sqrt
-from .model_helper import KEYPOINTS
+from pathlib import Path
 VISDICT = {0:"not exist", 1:"invisible", 2:"visible"}
 class ImagePointer:
   def __init__(self, outputList, bbox, imgName) -> None:
@@ -71,3 +71,31 @@ class ImagePointer:
 
   def __repr__(self) -> str:
     return self.pointList.__repr__()
+  
+
+class ImagePointerList(list):
+  def __init__(self, rootPath : Path, findGlob = "**/*.jpg", *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.iter = rootPath.rglob(findGlob)
+    self.curIdx = -1
+    self.metaDict = {}
+
+  def next(self):
+    self.curIdx += 1
+    if self.curIdx < len(self):
+      nextPath = self[self.curIdx]  
+    else: 
+      nextPath = next(self.iter)
+      self.append(nextPath)
+    return nextPath, self.metaDict[nextPath.as_posix()] if (nextPath.as_posix() in self.metaDict.keys()) else None
+  
+  def back(self):
+    self.curIdx = self.curIdx - 1 if self.curIdx > 0 else 0
+    backPath = self[self.curIdx]
+    return backPath, self.metaDict[backPath.as_posix()] if (backPath.as_posix() in self.metaDict.keys()) else None
+  
+  def updateDict(self, curPath: Path, imagePointer, imgW, imgH):
+    self.metaDict[curPath.as_posix()] = {
+      "imagePointer" : imagePointer,
+      "imgWH" : (imgW, imgH)
+    }
