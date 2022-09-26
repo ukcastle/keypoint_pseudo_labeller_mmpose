@@ -1,9 +1,9 @@
 import cv2
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath
 from src.data_reader import drawBbox
 from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
-from src.point import ImagePointer, ImagePointerList
+from src.point import ImagePointer, ImagePointerDict
 from src.coco_writer import COCO_dict
 
 class X_Y:
@@ -114,12 +114,12 @@ def mouseEvent(event, x, y, flags, param):
     imagePointer.rollback()
 
 
-
-
+import json
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   cocoDict = COCO_dict()
-  imgStorage = ImagePointerList(ROOT)
+  imgStorage = ImagePointerDict(ROOT)
+  jsonPath = Path("output.json")
   try:
     nextPath, value = imgStorage.next()
     while(True):
@@ -129,9 +129,11 @@ def main():
       nextPath, value = imgStorage.next() if isNext else imgStorage.back()
       print(imgStorage.curIdx)   
   finally:
-    print(imgStorage)
-  # 다음이미지, 이전 이미지 구현
-  # coco 저장, 불러오기 구현
- 
+    # coco 저장
+    for key, val in imgStorage.items():
+      imgPath = PurePosixPath(*(key.split("/")[2:]))
+      cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
+    with jsonPath.open("w") as f:
+      json.dump(cocoDict, f, indent=2)
 if __name__=="__main__":
   main()

@@ -13,10 +13,6 @@ class JsonWriter:
       with self.filePath.open("r") as f:
         self.outputDict = json.load(f)  
 
-  def addElement(self, fileName:str , elementDict):
-
-    self.outputDict[fileName] = elementDict
-
   def saveFile(self):
     with self.filePath.open("w") as f:
       json.dump(self.outputDict, f, indent=2)
