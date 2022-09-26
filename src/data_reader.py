@@ -28,7 +28,7 @@ def xywh2xyxy4Dict(lbDict : dict, imgW, imgH):
 import numpy as np
 def getFullBbox(labels : dict):
   arr = np.array(list(labels.values()))
-  return (*(arr[:,:2].min(0)), *(arr[:,2:].max(0)))
+  return [int(x) for x in (*(arr[:,:2].min(0)), *(arr[:,2:].max(0)))]
 
 def drawBbox(img, imgW, imgH, imgPath):
   x1,y1,x2,y2 = getFullBbox(xywh2xyxy4Dict(getLabel(changePath(imgPath)), imgW, imgH))
