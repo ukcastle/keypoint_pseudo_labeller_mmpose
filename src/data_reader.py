@@ -1,7 +1,7 @@
-
 from pathlib import Path
 import re
 import cv2
+import shutil
 
 def getLabel(lbPath):
   retDict = {}
@@ -34,3 +34,8 @@ def drawBbox(img, imgW, imgH, imgPath):
   x1,y1,x2,y2 = getFullBbox(xywh2xyxy4Dict(getLabel(changePath(imgPath)), imgW, imgH))
   cv2.rectangle(img, (x1,y1), (x2,y2), (255,0,255),1)
   return x1,y1,x2,y2
+
+def moveFile(path, rootDir = "data/done"):
+  donePath = Path(rootDir,*path.split("/")[2:])
+  donePath.parent.mkdir(exist_ok=True, parents=True)
+  shutil.move(path, donePath)

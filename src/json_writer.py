@@ -16,9 +16,3 @@ class JsonWriter:
   def saveFile(self):
     with self.filePath.open("w") as f:
       json.dump(self.outputDict, f, indent=2)
-  
-  @staticmethod
-  def moveFile(path: Path, rootDir = "done"):
-    donePath = Path(rootDir,*(path.parts[1:]))
-    donePath.parent.mkdir(exist_ok=True, parents=True)
-    shutil.move(path, donePath)
