@@ -73,29 +73,29 @@ class ImagePointer:
     return self.pointList.__repr__()
   
 
-class ImagePointerList(list):
+class ImagePointerDict(dict):
   def __init__(self, rootPath : Path, findGlob = "**/*.jpg", *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.iter = rootPath.rglob(findGlob)
     self.curIdx = -1
-    self.metaDict = {}
+    self.pathList = []
 
   def next(self):
     self.curIdx += 1
     if self.curIdx < len(self):
-      nextPath = self[self.curIdx]  
+      nextPath = self.pathList[self.curIdx]  
     else: 
       nextPath = next(self.iter)
-      self.append(nextPath)
-    return nextPath, self.metaDict[nextPath.as_posix()] if (nextPath.as_posix() in self.metaDict.keys()) else None
+      self.pathList.append(nextPath)
+    return nextPath, self[nextPath.as_posix()] if (nextPath.as_posix() in self.keys()) else None
   
   def back(self):
     self.curIdx = self.curIdx - 1 if self.curIdx > 0 else 0
-    backPath = self[self.curIdx]
-    return backPath, self.metaDict[backPath.as_posix()] if (backPath.as_posix() in self.metaDict.keys()) else None
+    backPath = self.pathList[self.curIdx]
+    return backPath, self[backPath.as_posix()] if (backPath.as_posix() in self.keys()) else None
   
   def updateDict(self, curPath: Path, imagePointer, imgW, imgH):
-    self.metaDict[curPath.as_posix()] = {
+    self[curPath.as_posix()] = {
       "imagePointer" : imagePointer,
       "imgWH" : (imgW, imgH)
     }
