@@ -1,20 +1,43 @@
 from pathlib import Path
 from .model_helper import KEYPOINTS
 from .img_handler import getSkeletons
-
+import json
 DEFAULTDATE = "2022-09-20 00:00:00"
 
 class COCO_dict(dict):
-  def __init__(self,*args, **kwargs):
+  def __init__(self, cocoPath, bboxPath, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self["images"] = []
-    self["annotations"] = []
-    self.updateInfo()
-    self.updateCategories()
-    self.updateLicense()
-
+    self.cocoPath = Path(cocoPath)
+    self.bboxPath = Path(bboxPath)
     self.bboxList = []
+    if self.cocoPath.is_file() and self.bboxPath.is_file():
+      self.loadCOCO()
+      self.loadBbox()
+    else:
+      self["images"] = []
+      self["annotations"] = []
+      self.updateInfo()
+      self.updateCategories()
+      self.updateLicense()
 
+
+  def saveCOCO(self):
+    with self.cocoPath.open("w") as f:
+      json.dump(self, f, indent=2)
+
+  def saveBbox(self):
+    with self.bboxPath.open("w") as f:
+      json.dump(self.bboxList, f, indent=2)
+
+  def loadCOCO(self):
+    with self.cocoPath.open("r") as f:
+      self.update(json.load(f))
+
+  def loadBbox(self):
+    with self.bboxPath.open("r") as f:
+      self.bboxList.extend(json.load(f))
+
+      
   def updateInfo(self):
     self.update({
       "info":{
@@ -69,11 +92,13 @@ class COCO_dict(dict):
 
   def updateDict(self, imgPath : Path, outputList, bbox, imgW, imgH):
     curImageDict = self.makeImageDict(imgPath.as_posix(), imgW, imgH)
+    x1,y1,x2,y2 = bbox
+    refineBbox = [x1,y1,x2-x1,y2-y1]
     self["images"].append(curImageDict)
-    self["annotations"].append(self.makeAnnsDict(COCO_dict.outputList2keyArray(outputList), curImageDict["id"], *bbox))
+    self["annotations"].append(self.makeAnnsDict(COCO_dict.outputList2keyArray(outputList), curImageDict["id"], *refineBbox))
 
     self.bboxList.append({
-      "bbox" : list(bbox),
+      "bbox" : refineBbox,
       "category_id" : 1,
       "image_id" : curImageDict["id"],
       "score" : 1.0
