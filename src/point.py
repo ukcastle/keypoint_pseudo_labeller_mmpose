@@ -1,5 +1,6 @@
 from math import sqrt
 from pathlib import Path
+from src.model_helper import KEYPOINTS
 VISDICT = {0:"not exist", 1:"invisible", 2:"visible"}
 class ImagePointer:
   def __init__(self, outputList, bbox, imgName) -> None:
@@ -13,8 +14,6 @@ class ImagePointer:
     for i,v in enumerate(outputList):
       x, y, p = v
       vis = 2
-      if i < 11 and p < 0.6:
-        vis = 1
       self.pointList.append([int(x),int(y),vis])
 
   def getNearIdx(self, x, y, thresh=10):
@@ -24,8 +23,8 @@ class ImagePointer:
         return i
     return None
   
-  def changeVis(self):
-    self.vis = (self.vis + 2) % 3
+  def changeVis(self, abs2 = False):
+    self.vis = (self.vis + 2) % 3 if not abs2 else 2
     if self.curSelectIdx:
       self.pointList[self.curSelectIdx][2] = self.vis
 
@@ -64,7 +63,8 @@ class ImagePointer:
     for i in range(fullLength-1):
       if historyLen-1 < i:
         continue
-      txtList[i+1] = str(self.history[-i-1])
+      idx, val = self.history[-i-1]
+      txtList[i+1] = f"{KEYPOINTS[idx]}, {val}"
     return txtList
   def __call__(self):
     return self.pointList
@@ -79,10 +79,17 @@ class ImagePointerDict(dict):
     self.iter = rootPath.rglob(findGlob)
     self.curIdx = -1
     self.pathList = []
+    self.passIdxList = []
+
+  def passIdx(self, curPath):
+    self.passIdxList.append(self.curIdx)
+    self[curPath.as_posix()] = None
 
   def next(self):
     self.curIdx += 1
     if self.curIdx < len(self):
+      while (self.curIdx in self.passIdxList):
+        self.curIdx+=1
       nextPath = self.pathList[self.curIdx]  
     else: 
       nextPath = next(self.iter)
@@ -90,7 +97,15 @@ class ImagePointerDict(dict):
     return nextPath, self[nextPath.as_posix()] if (nextPath.as_posix() in self.keys()) else None
   
   def back(self):
-    self.curIdx = self.curIdx - 1 if self.curIdx > 0 else 0
+    self.curIdx = max(self.curIdx - 1,0)
+    isZeroPass = False
+    while (self.curIdx in self.passIdxList):
+      if self.curIdx <= 0:
+        isZeroPass = True
+      if isZeroPass:
+        self.curIdx += 1
+      else:
+        self.curIdx -= 1
     backPath = self.pathList[self.curIdx]
     return backPath, self[backPath.as_posix()] if (backPath.as_posix() in self.keys()) else None
   
