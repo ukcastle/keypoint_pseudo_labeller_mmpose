@@ -43,10 +43,17 @@ def drawKeyPointCircle(img, outputList, radius):
     x,y,vis = [int(item) for item in v]
     keyDict = dataset_info["keypoint_info"][i]
     cv2.circle(dst, (x,y), radius, keyDict["color"])
-    dotColor = (0,0,255) if vis==2 else (255,255,255)
-    cv2.circle(dst, (x,y), 1, dotColor)
+    
   return dst
 
+def drawKeyPointDot(img, outputList, radius = 1):
+  dst = img.copy()
+  for i,v in enumerate(outputList):
+    x,y,vis = [int(item) for item in v]
+    dotColor = (0,0,255) if vis==2 else (255,255,255)
+    cv2.circle(dst, (x,y), radius, dotColor)
+  
+  return dst
 # @timeit
 def drawSkeleton(img, outputList, skeletons):
   dst = img.copy()

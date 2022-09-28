@@ -47,6 +47,7 @@ def oneImageProcess(modelHelper, imgPath, value):
   cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer, xy))
   historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
   outputInfoDiv15 = int(imgH/15)
+  isHide = False
   while(True):
     outputMat = img.copy()
     key = cv2.waitKey(10)
@@ -63,10 +64,17 @@ def oneImageProcess(modelHelper, imgPath, value):
       imagePointer.changeVis(abs2=True)
     elif key==ord("p"):
       return True, None
+    elif key==ord("h"):
+      isHide = not isHide
     elif key==27: # esc
       exit()
 
     txtList = imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH)
+
+    if not isHide:
+      outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS) 
+      outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
+
     for i in range(HISTORY_SHOW_LEGNTH):
       color = (0,0,255) if i==1 else (255,255,255)
       cv2.putText(outputMat, txtList[i], 
@@ -80,10 +88,10 @@ def oneImageProcess(modelHelper, imgPath, value):
       cv2.putText(outputMat, f"{imagePointer()[i]}", (imgW+ZOOMRANGE+20, outputInfoDiv15*(i)+30), 
         cv2.FONT_HERSHEY_PLAIN, 1, color)
 
-    outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS)
-    outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
+    outputMat = drawKeyPointDot(outputMat, imagePointer())
     if imagePointer.nowClicked and imagePointer.curSelectIdx is not None:
       cv2.putText(outputMat, f"{KEYPOINTS[imagePointer.curSelectIdx]}", (xy.x - 30, xy.y - 5), cv2.FONT_HERSHEY_PLAIN, 0.8, (0,0,255))
+    
     cropMat = getCropMatFromPoint(drawCrossLine(outputMat, xy.x, xy.y, color = (0,0,255)), xy.x, xy.y, PAD, imgW, imgH)
     outputMat[0:ZOOMRANGE, imgW:imgW+ZOOMRANGE] = cv2.resize(cropMat, (ZOOMRANGE,ZOOMRANGE)) #우측 위에 확대이미지
     outputMat = drawFullCrossLine(outputMat, xy.x, xy.y, imgW, imgH, (0,0,255))
