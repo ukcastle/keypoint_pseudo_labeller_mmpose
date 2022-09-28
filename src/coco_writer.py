@@ -119,7 +119,7 @@ class COCO_dict(dict):
   
   def makeImageDict(self, imgPath, imgW, imgH):
     return {
-      "id":len(self["images"]), 
+      "id":self["images"][-1]["id"]+1 if len(self["images"]) > 0 else 0, 
       "width": imgW, 
       "height": imgH, 
       "file_name": imgPath, 
