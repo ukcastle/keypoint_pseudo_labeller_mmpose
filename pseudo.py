@@ -48,7 +48,7 @@ def oneImageProcess(modelHelper, imgPath, value):
   cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer, xy))
   historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
   outputInfoDiv15 = int(imgH/15)
-  isHide = False
+  isShowSkeletonInCrop = False
   while(True):
     outputMat = img.copy()
     key = cv2.waitKey(10)
@@ -66,14 +66,13 @@ def oneImageProcess(modelHelper, imgPath, value):
     elif key==ord("p"):
       return True, None
     elif key==ord("h") or key==ord("v"):
-      isHide = not isHide
+      isShowSkeletonInCrop = not isShowSkeletonInCrop
     elif key==ord("c"):
       xy.isNextChange = not xy.isNextChange
     elif key==27: # esc
       exit()
 
     txtList = imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH)
-
 
     for i in range(HISTORY_SHOW_LEGNTH):
       color = (0,0,255) if i==1 else (255,255,255)
@@ -93,9 +92,10 @@ def oneImageProcess(modelHelper, imgPath, value):
     outputMat = drawKeyPointDot(outputMat, imagePointer())
     noDrawMat = outputMat.copy()
     
-    if not isHide:
-      outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS) 
-      outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
+    outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS) 
+    outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
+    if isShowSkeletonInCrop:
+      noDrawMat = drawSkeleton(noDrawMat, imagePointer(), SKELETONS, viewLevel=1, curIdx=imagePointer.curSelectIdx) 
     
     if imagePointer.nowClicked and imagePointer.curSelectIdx is not None:
       cv2.putText(outputMat, f"{KEYPOINTS[imagePointer.curSelectIdx]}", (xy.x - 30, xy.y - 5), cv2.FONT_HERSHEY_PLAIN, 0.8, (0,0,255))
@@ -127,7 +127,6 @@ def mouseEvent(event, x, y, flags, param):
       xy.isNextChange = False
       imagePointer.changePair()
       imagePointer.nowClicked = False
-      imagePointer.setSelected(None)
       return
     
     imagePointer.setPoint(x,y)
@@ -168,16 +167,16 @@ def main():
       imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
          
   finally:
-    # for key, val in imgStorage.items():
-    #   if val is None:
-    #     moveFile(key, rootDir="data/pass")
-    #     continue
-    #   imgPath = PurePosixPath(*(key.split("/")[2:]))
-    #   cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
-    #   moveFile(key)
-    # # coco 저장
-    # cocoDict.saveCOCO()
-    # cocoDict.saveBbox()
+    for key, val in imgStorage.items():
+      if val is None:
+        moveFile(key, rootDir="data/pass")
+        continue
+      imgPath = PurePosixPath(*(key.split("/")[2:]))
+      cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
+      moveFile(key)
+    # coco 저장
+    cocoDict.saveCOCO()
+    cocoDict.saveBbox()
     pass
 if __name__=="__main__":
   main()

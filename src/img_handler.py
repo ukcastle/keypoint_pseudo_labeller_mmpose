@@ -57,9 +57,11 @@ def drawKeyPointDot(img, outputList, radius = 1):
   
   return dst
 # @timeit
-def drawSkeleton(img, outputList, skeletons):
+def drawSkeleton(img, outputList, skeletons, viewLevel=2, curIdx =None):
   dst = img.copy()
   for startIdx, endIdx, color in skeletons:
+    if (curIdx is not None) and (viewLevel == 1) and (curIdx not in (startIdx, endIdx)):
+      continue
     start = outputList[startIdx][:2]
     end = outputList[endIdx][:2]
     cv2.line(dst, start, end, color)
