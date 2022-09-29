@@ -23,11 +23,14 @@ def addPadding(x1, y1, x2, y2, padding, imgW, imgH):
   x2, y2 = (min(p+padding, length) for p, length in ((x2,imgW), (y2, imgH)))
   return x1, y1, x2 ,y2
 
-def getSkeletons():
+def getKeyDict():
   keyDict = {}
   for value in dataset_info["keypoint_info"].values():
     keyDict[value["name"]] = value["id"]
+  return keyDict
 
+def getSkeletons():
+  keyDict = getKeyDict()
   skeletonList = []
   for value in dataset_info["skeleton_info"].values():
     startId, endId = [keyDict[x] for x in value["link"]] 

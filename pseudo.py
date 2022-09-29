@@ -25,6 +25,7 @@ class X_Y:
   def __init__(self) -> None:
     self.x=0
     self.y=0
+    self.isNextChange=False
 
 def oneImageProcess(modelHelper, imgPath, value):
   img = cv2.imread(imgPath.as_posix())
@@ -66,6 +67,8 @@ def oneImageProcess(modelHelper, imgPath, value):
       return True, None
     elif key==ord("h") or key==ord("v"):
       isHide = not isHide
+    elif key==ord("c"):
+      xy.isNextChange = True
     elif key==27: # esc
       exit()
 
@@ -108,11 +111,20 @@ def mouseEvent(event, x, y, flags, param):
   # 클릭할 때 Null이면 nearidx 찾기
   # 선택이 완료됐으면 History에 남기기
   if event == cv2.EVENT_LBUTTONDOWN:
+
     imagePointer.nowClicked = True
     if imagePointer.isNullSelect():
       imagePointer.setSelected(imagePointer.getNearIdx(x, y, thresh=5))
     if not imagePointer.isNullSelect():
       imagePointer.addHistory()
+
+    if xy.isNextChange:
+      xy.isNextChange = False
+      imagePointer.changePair()
+      imagePointer.nowClicked = False
+      imagePointer.setSelected(None)
+      return
+    
     imagePointer.setPoint(x,y)
 
   # 마우스 업일때 클릭된거 초기화해주기
@@ -151,15 +163,16 @@ def main():
       imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
          
   finally:
-    for key, val in imgStorage.items():
-      if val is None:
-        moveFile(key, rootDir="data/pass")
-        continue
-      imgPath = PurePosixPath(*(key.split("/")[2:]))
-      cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
-      moveFile(key)
-    # coco 저장
-    cocoDict.saveCOCO()
-    cocoDict.saveBbox()
+    # for key, val in imgStorage.items():
+    #   if val is None:
+    #     moveFile(key, rootDir="data/pass")
+    #     continue
+    #   imgPath = PurePosixPath(*(key.split("/")[2:]))
+    #   cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
+    #   moveFile(key)
+    # # coco 저장
+    # cocoDict.saveCOCO()
+    # cocoDict.saveBbox()
+    pass
 if __name__=="__main__":
   main()

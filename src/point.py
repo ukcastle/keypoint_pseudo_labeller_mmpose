@@ -1,7 +1,10 @@
 from math import sqrt
 from pathlib import Path
+from .img_handler import getKeyDict
 from src.model_helper import KEYPOINTS
+from .model.custom_golf import dataset_info
 VISDICT = {0:"not exist", 1:"invisible", 2:"visible"}
+KEYDICT = getKeyDict()
 class ImagePointer:
   def __init__(self, outputList, bbox, imgName) -> None:
     self.imgName = imgName
@@ -40,7 +43,10 @@ class ImagePointer:
     self.pointList[self.curSelectIdx] = [x,y,self.vis]
 
   def addHistory(self):
-    self.history.append((self.curSelectIdx, self.pointList[self.curSelectIdx].copy()))
+    self._addHistory(self.curSelectIdx)
+
+  def _addHistory(self, curIdx):
+    self.history.append((curIdx, self.pointList[curIdx].copy()))
 
   def setSelected(self, i):
     self.curSelectIdx = i
@@ -67,6 +73,18 @@ class ImagePointer:
       idx, val = self.history[-i-1]
       txtList[i+1] = f"{KEYPOINTS[idx]}, {val}"
     return txtList
+
+  def changePair(self):
+    if self.isNullSelect():
+      return
+    if (swapIdx := KEYDICT[dataset_info["keypoint_info"][self.curSelectIdx]["swap"]]) == "":
+      return
+    self._addHistory(self.curSelectIdx)
+    self._addHistory(swapIdx)
+    temp = self.pointList[self.curSelectIdx].copy()
+    self.pointList[self.curSelectIdx] = self.pointList[int(swapIdx)].copy()
+    self.pointList[int(swapIdx)] = temp
+
   def __call__(self):
     return self.pointList
 
