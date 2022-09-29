@@ -53,8 +53,7 @@ def drawKeyPointDot(img, outputList, radius = 1):
   dst = img.copy()
   for i,v in enumerate(outputList):
     x,y,vis = [int(item) for item in v]
-    dotColor = (0,0,255) if vis==2 else (255,255,255)
-    cv2.circle(dst, (x,y), radius, dotColor)
+    cv2.circle(dst, (x,y), radius, getRedColorByVis(vis))
   
   return dst
 # @timeit
@@ -65,4 +64,6 @@ def drawSkeleton(img, outputList, skeletons):
     end = outputList[endIdx][:2]
     cv2.line(dst, start, end, color)
   return dst
-  
+
+def getRedColorByVis(vis):
+  return (127*(2-vis),127*(2-vis),255)
