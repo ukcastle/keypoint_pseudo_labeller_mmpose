@@ -8,6 +8,7 @@ class ImagePointer:
     self.curSelectIdx = None
     self.pointList = []
     self.history = []
+    self.predTxt = []
     self.nowClicked = False
     self.vis = 2
     self.bbox = bbox
@@ -15,7 +16,7 @@ class ImagePointer:
       x, y, p = v
       vis = 2
       self.pointList.append([int(x),int(y),vis])
-
+      self.predTxt.append(f"{p:.2f}")
   def getNearIdx(self, x, y, thresh=10):
     for i,v in enumerate(self.pointList):
       pointX,pointY,_ = v 

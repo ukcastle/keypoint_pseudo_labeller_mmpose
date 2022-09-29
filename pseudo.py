@@ -64,7 +64,7 @@ def oneImageProcess(modelHelper, imgPath, value):
       imagePointer.changeVis(abs2=True)
     elif key==ord("p"):
       return True, None
-    elif key==ord("h"):
+    elif key==ord("h") or key==ord("v"):
       isHide = not isHide
     elif key==27: # esc
       exit()
@@ -84,6 +84,8 @@ def oneImageProcess(modelHelper, imgPath, value):
     for i in range(15):
       color = (0,0,255) if i==imagePointer.curSelectIdx else (255,255,255)
       cv2.putText(outputMat, f"{KEYPOINTS[i]}", (imgW+ZOOMRANGE+10, outputInfoDiv15*(i)+15), 
+        cv2.FONT_HERSHEY_PLAIN, 1, color)
+      cv2.putText(outputMat, f"{imagePointer.predTxt[i]}", (imgW+ZOOMRANGE+130, outputInfoDiv15*(i)+15), 
         cv2.FONT_HERSHEY_PLAIN, 1, color)
       cv2.putText(outputMat, f"{imagePointer()[i]}", (imgW+ZOOMRANGE+20, outputInfoDiv15*(i)+30), 
         cv2.FONT_HERSHEY_PLAIN, 1, color)
@@ -111,6 +113,7 @@ def mouseEvent(event, x, y, flags, param):
       imagePointer.setSelected(imagePointer.getNearIdx(x, y, thresh=5))
     if not imagePointer.isNullSelect():
       imagePointer.addHistory()
+    imagePointer.setPoint(x,y)
 
   # 마우스 업일때 클릭된거 초기화해주기
   elif event == cv2.EVENT_LBUTTONUP:
@@ -158,6 +161,5 @@ def main():
     # coco 저장
     cocoDict.saveCOCO()
     cocoDict.saveBbox()
-    pass
 if __name__=="__main__":
   main()
