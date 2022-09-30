@@ -1,10 +1,33 @@
 import cv2
 from src.util import timeit
 
+def initStatus(img, imgW, imgH, zoomRange, infoRange):
+  img = cv2.copyMakeBorder(img, 0, 0, 0, zoomRange+infoRange, cv2.BORDER_CONSTANT) # 정보창
+  cv2.line(img, (imgW,zoomRange), (imgW+zoomRange, zoomRange), (255,255,255), 2) # 구분선
+  cv2.line(img, (imgW+zoomRange,0), (imgW+zoomRange,imgH), (255,255,255), 2)
+  return img
 def drawCrossLine(img, x, y, crossLineHalf=10, color=(0,0,255)):
   cv2.line(img, (x-crossLineHalf,y), (x+crossLineHalf,y), color)
   cv2.line(img, (x,y-crossLineHalf), (x,y+crossLineHalf), color)
   return img
+
+def putTextHistoryList(outputMat, historyLength, txtList, imgW, imgH, zoomRange):
+  historyTabDiv4 = int((imgH-zoomRange) / historyLength)
+  for i in range(historyLength):
+    color = (0,0,255) if i==1 else (255,255,255)
+    cv2.putText(outputMat, txtList[i], 
+      (imgW, zoomRange+historyTabDiv4*(i+1)-int(historyTabDiv4/historyLength)), 
+      cv2.FONT_HERSHEY_PLAIN, 1, color)
+
+def putTextOutputInfo(outputMat, imagePointer, keyPoints, width, height):
+  for i in range(15):
+    color = (0,0,255) if i==imagePointer.curSelectIdx else (255,255,255)
+    cv2.putText(outputMat, f"{keyPoints[i]}", (width+10, height*(i)+15), 
+      cv2.FONT_HERSHEY_PLAIN, 1, color)
+    cv2.putText(outputMat, f"{imagePointer.predTxt[i]}", (width+130, height*(i)+15), 
+      cv2.FONT_HERSHEY_PLAIN, 1, color)
+    cv2.putText(outputMat, f"{imagePointer()[i]}", (width+20, height*(i)+30), 
+      cv2.FONT_HERSHEY_PLAIN, 1, color)
 
 def getCropMatFromPoint(img, x,y,pad,imgW,imgH):
   x1, padx1 = (x-pad, 0) if (x-pad >= 0) else (0, abs(x-pad))

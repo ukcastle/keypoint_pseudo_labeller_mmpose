@@ -16,12 +16,9 @@ HISTORY_SHOW_LEGNTH = 9
 CONFIG = "src/model/golf_mobilenetv2_256x192.py"
 WEIGHT = "src/model/best.pth"
 SKELETONS = getSkeletons()
-VIS_THRESH = 0.6
 MODELWIDTH = 192
 MODELHEIGHT = 256
 DEVICE = "cuda:1"
-
-
 
 def oneImageProcess(modelHelper, imgPath, value):
   img = cv2.imread(imgPath.as_posix())
@@ -36,16 +33,12 @@ def oneImageProcess(modelHelper, imgPath, value):
     imagePointer = value["imagePointer"]
     bbox = drawBbox(img, imgW, imgH, imgPath)
 
-  img = cv2.copyMakeBorder(img, 0, 0, 0, ZOOMRANGE+INFORANGE, cv2.BORDER_CONSTANT) # 정보창
-  cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
-  cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
+  img = initStatus(img, imgW, imgH, ZOOMRANGE, INFORANGE)
   cv2.imshow(SHOWNAME,drawSkeleton(img, imagePointer(), SKELETONS))
   
   eventHandler = EventHandler(imagePointer, imgW, imgH)
   
   cv2.setMouseCallback(SHOWNAME, eventHandler.mouseEvent)
-  historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
-  outputInfoDiv15 = int(imgH/15)
   
   xy = eventHandler.xy
 
@@ -56,23 +49,13 @@ def oneImageProcess(modelHelper, imgPath, value):
     if retVal := (eventHandler.applyKeys(key)) is not None:
       return retVal
 
-    txtList = imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH)
+    putTextHistoryList(outputMat, HISTORY_SHOW_LEGNTH, 
+      imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH),
+      imgW, imgH, ZOOMRANGE)
 
-    for i in range(HISTORY_SHOW_LEGNTH):
-      color = (0,0,255) if i==1 else (255,255,255)
-      cv2.putText(outputMat, txtList[i], 
-        (imgW, ZOOMRANGE+historyTabDiv4*(i+1)-int(historyTabDiv4/HISTORY_SHOW_LEGNTH)), 
-        cv2.FONT_HERSHEY_PLAIN, 1, color)
+    putTextOutputInfo(outputMat, imagePointer, 
+      KEYPOINTS, imgW+ZOOMRANGE, int(imgH/15))
     
-    for i in range(15):
-      color = (0,0,255) if i==imagePointer.curSelectIdx else (255,255,255)
-      cv2.putText(outputMat, f"{KEYPOINTS[i]}", (imgW+ZOOMRANGE+10, outputInfoDiv15*(i)+15), 
-        cv2.FONT_HERSHEY_PLAIN, 1, color)
-      cv2.putText(outputMat, f"{imagePointer.predTxt[i]}", (imgW+ZOOMRANGE+130, outputInfoDiv15*(i)+15), 
-        cv2.FONT_HERSHEY_PLAIN, 1, color)
-      cv2.putText(outputMat, f"{imagePointer()[i]}", (imgW+ZOOMRANGE+20, outputInfoDiv15*(i)+30), 
-        cv2.FONT_HERSHEY_PLAIN, 1, color)
-
     outputMat = drawKeyPointDot(outputMat, imagePointer())
     noDrawMat = outputMat.copy()
     
