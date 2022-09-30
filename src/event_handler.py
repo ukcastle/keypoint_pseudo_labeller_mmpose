@@ -23,6 +23,8 @@ class EventHandler:
     self.imgH = imgH
     
   def applyKeys(self, key):
+    if key in range(65, 90+1):
+      key += 32 # A-Z -> a-z
     if key in KEYMAP.keys():
       # 키보드로 인덱스 설정 대신 할수있게하기
       self.imagePointer.setSelected(KEYMAP[key])
