@@ -46,7 +46,7 @@ class COCO_dict(dict):
         "description" : "golf keypoint",
         "contributor" : "josw631@gmail.com",
         "url" : ".",
-        "date_created" : DEFAULTDATE
+        "date_created" : datetime.now().strftime("%Y-%m-%d %H:%M:%S")
       }
     })
 
