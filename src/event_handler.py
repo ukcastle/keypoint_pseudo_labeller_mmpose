@@ -36,8 +36,10 @@ class EventHandler:
       self.imagePointer.changeVis(absVal=2)
     elif key==ord("p"):
       return True, None
-    elif key==ord("h") or key==ord("v"):
-      EventHandler.viewLevel = (EventHandler.viewLevel+1) % 3
+    elif key==ord("h"):
+      EventHandler.viewLevel = (EventHandler.viewLevel+2) % 3
+    elif key==ord("v"):
+      EventHandler.viewLevel = 1 if EventHandler.viewLevel == 2 else 2
     elif key==ord("c"):
       self.xy.isNextChange = not self.xy.isNextChange
     elif key==27: # esc
