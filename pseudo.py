@@ -46,7 +46,7 @@ def oneImageProcess(modelHelper, imgPath, value):
     outputMat = img.copy()
     key = cv2.waitKey(10)
 
-    if retVal := (eventHandler.applyKeys(key)) is not None:
+    if (retVal := eventHandler.applyKeys(key)) is not None:
       return retVal
 
     putTextHistoryList(outputMat, HISTORY_SHOW_LEGNTH, 
@@ -96,16 +96,16 @@ def main():
       imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
          
   finally:
-    # for key, val in imgStorage.items():
-    #   if val is None:
-    #     moveFile(key, rootDir="data/pass")
-    #     continue
-    #   imgPath = PurePosixPath(*(key.split("/")[2:]))
-    #   cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
-    #   moveFile(key)
-    # # coco 저장
-    # cocoDict.saveCOCO()
-    # cocoDict.saveBbox()
+    for key, val in imgStorage.items():
+      if val is None:
+        moveFile(key, rootDir="data/pass")
+        continue
+      imgPath = PurePosixPath(*(key.split("/")[2:]))
+      cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
+      moveFile(key)
+    # coco 저장
+    cocoDict.saveCOCO()
+    cocoDict.saveBbox()
     pass
 if __name__=="__main__":
   main()
