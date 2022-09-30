@@ -2,7 +2,7 @@ from pathlib import Path
 from .model_helper import KEYPOINTS
 from .img_handler import getSkeletons
 import json
-DEFAULTDATE = "2022-09-20 00:00:00"
+from datetime import datetime
 
 class COCO_dict(dict):
   def __init__(self, cocoPath, bboxPath, *args, **kwargs):
@@ -126,5 +126,5 @@ class COCO_dict(dict):
       "license": 1, 
       "flickr_url": "", 
       "coco_url": "", 
-      "date_captured": DEFAULTDATE
+      "date_captured": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
