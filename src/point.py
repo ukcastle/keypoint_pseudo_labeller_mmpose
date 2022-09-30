@@ -20,12 +20,19 @@ class ImagePointer:
       vis = 2
       self.pointList.append([int(x),int(y),vis])
       self.predTxt.append(f"{p:.2f}")
+
   def getNearIdx(self, x, y, thresh=10):
+    shortestIdx, shortestDistance = -1, 9999
     for i,v in enumerate(self.pointList):
       pointX,pointY,_ = v 
-      if sqrt((pointX-x)**2 + (pointY-y)**2) < thresh:
-        return i
-    return None
+      curDistance = sqrt((pointX-x)**2 + (pointY-y)**2)
+      if curDistance < shortestDistance:
+        shortestIdx = i
+        shortestDistance = curDistance
+    if shortestDistance > thresh:
+      return None
+    else:
+      return shortestIdx
   
   def changeVis(self, absVal = -1):
     if absVal in range(3):
