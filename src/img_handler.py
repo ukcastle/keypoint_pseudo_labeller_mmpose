@@ -89,6 +89,8 @@ def drawSkeleton(img, outputList, skeletons, viewLevel=2, curIdx = None):
       continue
     start = outputList[startIdx][:2]
     end = outputList[endIdx][:2]
+    if 0 in [outputList[x][2] for x in (startIdx, endIdx)]:
+      continue
     cv2.line(dst, start, end, color)
   return dst
 
