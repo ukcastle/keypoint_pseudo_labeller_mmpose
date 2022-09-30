@@ -15,12 +15,12 @@ class X_Y:
 KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
 
 class EventHandler:
+  viewLevel = 1 #static
   def __init__(self, imagePointer : ImagePointer, imgW, imgH) -> None:
     self.xy = X_Y(imgW, imgH)
     self.imagePointer = imagePointer
     self.imgW = imgW
     self.imgH = imgH
-    self.viewLevel = 2
     
   def applyKeys(self, key):
     if key in KEYMAP.keys():
@@ -33,11 +33,11 @@ class EventHandler:
     elif key==ord("a"):
       self.imagePointer.changeVis()
     elif key==ord("s"):
-      self.imagePointer.changeVis(abs2=True)
+      self.imagePointer.changeVis(absVal=2)
     elif key==ord("p"):
       return True, None
     elif key==ord("h") or key==ord("v"):
-      self.viewLevel = (self.viewLevel+2) % 3
+      EventHandler.viewLevel = (EventHandler.viewLevel+1) % 3
     elif key==ord("c"):
       self.xy.isNextChange = not self.xy.isNextChange
     elif key==27: # esc

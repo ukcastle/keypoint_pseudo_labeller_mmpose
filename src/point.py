@@ -27,8 +27,11 @@ class ImagePointer:
         return i
     return None
   
-  def changeVis(self, abs2 = False):
-    self.vis = (self.vis + 2) % 3 if not abs2 else 2
+  def changeVis(self, absVal = -1):
+    if absVal in range(3):
+      self.vis = absVal
+    else:
+      self.vis = (self.vis + 2) % 3
     if self.curSelectIdx:
       self.pointList[self.curSelectIdx][2] = self.vis
 
