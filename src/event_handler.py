@@ -20,7 +20,7 @@ class EventHandler:
     self.imagePointer = imagePointer
     self.imgW = imgW
     self.imgH = imgH
-    self.isShowSkeletonInCrop = True
+    self.viewLevel = 2
     
   def applyKeys(self, key):
     if key in KEYMAP.keys():
@@ -37,8 +37,7 @@ class EventHandler:
     elif key==ord("p"):
       return True, None
     elif key==ord("h") or key==ord("v"):
-      self.isShowSkeletonInCrop = not self.isShowSkeletonInCrop
-      print(self.isShowSkeletonInCrop)
+      self.viewLevel = (self.viewLevel+2) % 3
     elif key==ord("c"):
       self.xy.isNextChange = not self.xy.isNextChange
     elif key==27: # esc

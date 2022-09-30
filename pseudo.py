@@ -50,7 +50,7 @@ def oneImageProcess(modelHelper, imgPath, value):
       return retVal
 
     putTextHistoryList(outputMat, HISTORY_SHOW_LEGNTH, 
-      imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH),
+      imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH, eventHandler.viewLevel),
       imgW, imgH, ZOOMRANGE)
 
     putTextOutputInfo(outputMat, imagePointer, 
@@ -61,8 +61,8 @@ def oneImageProcess(modelHelper, imgPath, value):
     
     outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS) 
     outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
-    if eventHandler.isShowSkeletonInCrop:
-      noDrawMat = drawSkeleton(noDrawMat, imagePointer(), SKELETONS, viewLevel=1, curIdx=imagePointer.curSelectIdx) 
+
+    noDrawMat = drawSkeleton(noDrawMat, imagePointer(), SKELETONS, viewLevel=eventHandler.viewLevel, curIdx=imagePointer.curSelectIdx) 
     
     if imagePointer.nowClicked and imagePointer.curSelectIdx is not None:
       cv2.putText(outputMat, f"{KEYPOINTS[imagePointer.curSelectIdx]}", (xy.x - 30, xy.y - 5), cv2.FONT_HERSHEY_PLAIN, 0.8, (0,0,255))
@@ -76,10 +76,12 @@ def oneImageProcess(modelHelper, imgPath, value):
     cv2.imshow(SHOWNAME ,outputMat)
 
 ROOT = Path("data/input/outdoor_amateur_")
+COCOJSON, BBOXJSON = "coco.json", "bbox.json"
+# COCOJSON, BBOXJSON = "val.json", "valbbox.json"
+
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
-  cocoDict = COCO_dict("coco.json", "bbox.json")
-  # cocoDict = COCO_dict("val.json", "valbbox.json")
+  cocoDict = COCO_dict(COCOJSON, BBOXJSON)
   imgStorage = ImagePointerDict(ROOT)
   try:
     isNext = True

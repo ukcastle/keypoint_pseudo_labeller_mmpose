@@ -63,9 +63,9 @@ class ImagePointer:
     self.setPoint(x,y)
     self.setSelected(None)
 
-  def getHistoryTxt(self,fullLength):
+  def getHistoryTxt(self,fullLength, skeletonVis):
     txtList = [""] * fullLength
-    txtList[0] = f"vis : {self.vis} ({VISDICT[self.vis]})" 
+    txtList[0] = f"vis : {self.vis} ({VISDICT[self.vis]}), viewLevel : {skeletonVis}" 
     historyLen = len(self.history)
     for i in range(fullLength-1):
       if historyLen-1 < i:

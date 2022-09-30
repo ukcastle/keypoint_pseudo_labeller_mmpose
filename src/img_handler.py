@@ -83,6 +83,8 @@ def drawKeyPointDot(img, outputList, radius = 1):
 def drawSkeleton(img, outputList, skeletons, viewLevel=2, curIdx = None):
   dst = img.copy()
   for startIdx, endIdx, color in skeletons:
+    if viewLevel == 0:
+      break
     if (viewLevel == 1) and (curIdx not in (startIdx, endIdx)):
       continue
     start = outputList[startIdx][:2]
