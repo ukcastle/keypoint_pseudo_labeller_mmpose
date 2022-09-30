@@ -6,6 +6,7 @@ from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
 from src.point import ImagePointer, ImagePointerDict
 from src.coco_writer import COCO_dict
+from src.event_handler import EventHandler
 
 SHOWNAME = "main"
 PAD = 50
@@ -16,16 +17,11 @@ CONFIG = "src/model/golf_mobilenetv2_256x192.py"
 WEIGHT = "src/model/best.pth"
 SKELETONS = getSkeletons()
 VIS_THRESH = 0.6
-KEYMAP = {ord(str(x)) : i for i, x in enumerate([*range(1,10),0, "q", "w", "e", "r", "t"])}
 MODELWIDTH = 192
 MODELHEIGHT = 256
 DEVICE = "cuda:1"
 
-class X_Y:
-  def __init__(self) -> None:
-    self.x=0
-    self.y=0
-    self.isNextChange=False
+
 
 def oneImageProcess(modelHelper, imgPath, value):
   img = cv2.imread(imgPath.as_posix())
@@ -44,33 +40,21 @@ def oneImageProcess(modelHelper, imgPath, value):
   cv2.line(img, (imgW,ZOOMRANGE), (imgW+ZOOMRANGE, ZOOMRANGE), (255,255,255), 2) # 구분선
   cv2.line(img, (imgW+ZOOMRANGE,0), (imgW+ZOOMRANGE,imgH), (255,255,255), 2)
   cv2.imshow(SHOWNAME,drawSkeleton(img, imagePointer(), SKELETONS))
-  xy = X_Y()
-  cv2.setMouseCallback(SHOWNAME, mouseEvent, (imgW, imgH, imagePointer, xy))
+  
+  eventHandler = EventHandler(imagePointer, imgW, imgH)
+  
+  cv2.setMouseCallback(SHOWNAME, eventHandler.mouseEvent)
   historyTabDiv4 = int((imgH-ZOOMRANGE) / HISTORY_SHOW_LEGNTH)
   outputInfoDiv15 = int(imgH/15)
-  isShowSkeletonInCrop = False
+  
+  xy = eventHandler.xy
+
   while(True):
     outputMat = img.copy()
     key = cv2.waitKey(10)
-    if key in KEYMAP.keys():
-      # 키보드로 인덱스 설정 대신 할수있게하기
-      imagePointer.setSelected(KEYMAP[key])
-    elif key==32: # space
-      return True, (imagePointer, imgW, imgH)
-    elif key==ord("b"):
-      return False, (imagePointer, imgW, imgH)
-    elif key==ord("a"):
-      imagePointer.changeVis()
-    elif key==ord("s"):
-      imagePointer.changeVis(abs2=True)
-    elif key==ord("p"):
-      return True, None
-    elif key==ord("h") or key==ord("v"):
-      isShowSkeletonInCrop = not isShowSkeletonInCrop
-    elif key==ord("c"):
-      xy.isNextChange = not xy.isNextChange
-    elif key==27: # esc
-      exit()
+
+    if retVal := (eventHandler.applyKeys(key)) is not None:
+      return retVal
 
     txtList = imagePointer.getHistoryTxt(HISTORY_SHOW_LEGNTH)
 
@@ -94,7 +78,7 @@ def oneImageProcess(modelHelper, imgPath, value):
     
     outputMat = drawSkeleton(outputMat, imagePointer(), SKELETONS) 
     outputMat = drawKeyPointCircle(outputMat, imagePointer(), 5)
-    if isShowSkeletonInCrop:
+    if eventHandler.isShowSkeletonInCrop:
       noDrawMat = drawSkeleton(noDrawMat, imagePointer(), SKELETONS, viewLevel=1, curIdx=imagePointer.curSelectIdx) 
     
     if imagePointer.nowClicked and imagePointer.curSelectIdx is not None:
@@ -107,44 +91,6 @@ def oneImageProcess(modelHelper, imgPath, value):
     outputMat = drawFullCrossLine(outputMat, xy.x, xy.y, imgW, imgH, lineColor)
 
     cv2.imshow(SHOWNAME ,outputMat)
-
-def mouseEvent(event, x, y, flags, param):
-  
-  imgW, imgH, imagePointer, xy = param
-  xy.x, xy.y = min(x,imgW), y
-  
-  # 클릭할 때 Null이면 nearidx 찾기
-  # 선택이 완료됐으면 History에 남기기
-  if event == cv2.EVENT_LBUTTONDOWN:
-
-    imagePointer.nowClicked = True
-    if imagePointer.isNullSelect():
-      imagePointer.setSelected(imagePointer.getNearIdx(x, y, thresh=5))
-    if not imagePointer.isNullSelect():
-      imagePointer.addHistory()
-
-    if xy.isNextChange:
-      xy.isNextChange = False
-      imagePointer.changePair()
-      imagePointer.nowClicked = False
-      return
-    
-    imagePointer.setPoint(x,y)
-
-  # 마우스 업일때 클릭된거 초기화해주기
-  elif event == cv2.EVENT_LBUTTONUP:
-    imagePointer.nowClicked = False
-    if not imagePointer.isNullSelect(): 
-      imagePointer.setSelected(None)
-
-  # 드래그할때 setpoint로 설정해주기
-  elif event == cv2.EVENT_MOUSEMOVE:
-    x = min(x, imgW)
-    if imagePointer.nowClicked:
-      imagePointer.setPoint(x,y)
-
-  elif event == cv2.EVENT_RBUTTONDOWN:
-    imagePointer.rollback()
 
 ROOT = Path("data/input/outdoor_amateur_")
 def main():
@@ -167,16 +113,16 @@ def main():
       imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
          
   finally:
-    for key, val in imgStorage.items():
-      if val is None:
-        moveFile(key, rootDir="data/pass")
-        continue
-      imgPath = PurePosixPath(*(key.split("/")[2:]))
-      cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
-      moveFile(key)
-    # coco 저장
-    cocoDict.saveCOCO()
-    cocoDict.saveBbox()
+    # for key, val in imgStorage.items():
+    #   if val is None:
+    #     moveFile(key, rootDir="data/pass")
+    #     continue
+    #   imgPath = PurePosixPath(*(key.split("/")[2:]))
+    #   cocoDict.updateDict(imgPath, val["imagePointer"].pointList, val["imagePointer"].bbox, *val["imgWH"])
+    #   moveFile(key)
+    # # coco 저장
+    # cocoDict.saveCOCO()
+    # cocoDict.saveBbox()
     pass
 if __name__=="__main__":
   main()
