@@ -25,7 +25,7 @@ def oneImageProcess(modelHelper, imgPath, value):
   if value is None:
     imgH,imgW = img.shape[:2]
     bbox = drawBbox(img, imgW, imgH, imgPath)
-    x1,y1,x2,y2 = addPadding(*bbox, padding=30, imgW=imgW, imgH=imgH)
+    x1,y1,x2,y2 = addPadding(*bbox, padding=0, imgW=imgW, imgH=imgH)
     output = modelHelper.inferenceModel(img, (x1,y1,x2,y2))
     imagePointer = ImagePointer(output, bbox, imgPath)
   else:
