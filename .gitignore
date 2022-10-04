@@ -131,3 +131,4 @@ mmpose
 data
 src/model
 .vscode/sftp.json
+*.onnx
