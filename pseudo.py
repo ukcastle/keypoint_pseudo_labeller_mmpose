@@ -7,7 +7,7 @@ from src.model_helper import ModelHelper, KEYPOINTS
 from src.point import ImagePointer, ImagePointerDict
 from src.coco_writer import COCO_dict
 from src.event_handler import EventHandler
-
+from src.json_reader import *
 SHOWNAME = "main"
 PAD = 50
 ZOOMRANGE = 300
@@ -20,7 +20,7 @@ MODELWIDTH = 192
 MODELHEIGHT = 256
 DEVICE = "cuda:1"
 
-def oneImageProcess(modelHelper, imgPath, value):
+def oneImageProcess(modelHelper, imgPath, value, preLabel):
   img = cv2.imread(imgPath.as_posix())
   if value is None:
     imgH,imgW = img.shape[:2]
@@ -32,6 +32,8 @@ def oneImageProcess(modelHelper, imgPath, value):
     imgW, imgH = value["imgWH"]
     imagePointer = value["imagePointer"]
     bbox = drawBbox(img, imgW, imgH, imgPath)
+
+  parseOutputList(imagePointer, preLabel)
 
   img = initStatus(img, imgW, imgH, ZOOMRANGE, INFORANGE)
   cv2.imshow(SHOWNAME,drawSkeleton(img, imagePointer(), SKELETONS))
@@ -75,10 +77,10 @@ def oneImageProcess(modelHelper, imgPath, value):
 
     cv2.imshow(SHOWNAME ,outputMat)
 
-ROOT = Path("data/input/outdoor_amateur_")
+ROOT = Path("data/input/outdoor_amateur_bad")
 COCOJSON, BBOXJSON = "coco.json", "bbox.json"
 # COCOJSON, BBOXJSON = "val.json", "valbbox.json"
-
+from src.json_reader import *
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   cocoDict = COCO_dict(COCOJSON, BBOXJSON)
@@ -87,7 +89,17 @@ def main():
     isNext = True
     while(True):
       nextPath, value = imgStorage.next() if isNext else imgStorage.back()
-      isNext, value = oneImageProcess(modelHelper, nextPath, value)
+      preLabel = getLabelFromJson(getJsonPathByImgPath(nextPath))
+      
+      checkPreLabel = False
+      for v in preLabel.values():
+        if v is not None:
+          checkPreLabel = True
+          break
+      if checkPreLabel:
+        isNext, value = oneImageProcess(modelHelper, nextPath, value, preLabel)
+      else:
+        continue
 
       if value is None:
         imgStorage.passIdx(nextPath)

@@ -42,16 +42,19 @@ class ImagePointer:
     if self.curSelectIdx:
       self.pointList[self.curSelectIdx][2] = self.vis
 
-  def setPoint(self, x, y):
-    if self.isNullSelect():
+  def setPoint(self, x, y, vis = None, seletedIdx = None):
+    if (seletedIdx is None) and self.isNullSelect():
       return
     bx1, by1, bx2, by2 = self.bbox
     x = bx1 if x<bx1+1 else x 
     x = bx2 if x>bx2-1 else x 
     y = by1 if y<by1+1 else y 
     y = by2 if y>by2-1 else y 
-    self.pointList[self.curSelectIdx] = [x,y,self.vis]
-
+    
+    curVis = self.vis if (vis is None) else vis
+    curSeletedIdx = self.curSelectIdx if (seletedIdx is None) else seletedIdx 
+    self.pointList[curSeletedIdx] = [x,y,curVis]
+    
   def addHistory(self):
     self._addHistory(self.curSelectIdx)
 
