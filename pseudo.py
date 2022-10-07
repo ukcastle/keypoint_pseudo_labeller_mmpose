@@ -77,9 +77,22 @@ def oneImageProcess(modelHelper, imgPath, value, preLabel):
 
     cv2.imshow(SHOWNAME ,outputMat)
 
-ROOT = Path("data/input/outdoor_amateur_bad")
+# ROOT = Path("data/input/outdoor_amateur_bad") # 1178
+# ROOT = Path("data/input/outdoor_amateur_normal") # valid 7492
+ROOT = Path("data/input/outdoor_amateur_worst") # 866
+# ROOT = Path("data/input/outdoor_pro_best") # 9601
 COCOJSON, BBOXJSON = "coco.json", "bbox.json"
 # COCOJSON, BBOXJSON = "val.json", "valbbox.json"
+
+# 남은 라벨 80000개정도
+# pre라벨링된건 20000개
+
+def checkHaveLabel(preLabel):
+  for v in preLabel.values():
+    if v is not None:
+      return True
+  return False
+
 from src.json_reader import *
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
@@ -87,28 +100,25 @@ def main():
   imgStorage = ImagePointerDict(ROOT)
   try:
     isNext = True
+
     while(True):
       nextPath, value = imgStorage.next() if isNext else imgStorage.back()
       preLabel = getLabelFromJson(getJsonPathByImgPath(nextPath))
       
-      checkPreLabel = False
-      for v in preLabel.values():
-        if v is not None:
-          checkPreLabel = True
-          break
-      if checkPreLabel:
-        isNext, value = oneImageProcess(modelHelper, nextPath, value, preLabel)
-      else:
-        continue
+      if checkHaveLabel(preLabel):    
+        isNext, processRetVal = oneImageProcess(modelHelper, nextPath, value, preLabel)
 
-      if value is None:
-        imgStorage.passIdx(nextPath)
-        continue
+        if processRetVal is None:
+          imgStorage.passIdx(nextPath)
+          continue
 
-      print(imgStorage.curIdx, nextPath)
-      imagePointer, imgW, imgH = value
-      imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
-         
+        print(imgStorage.curIdx, nextPath)
+        imagePointer, imgW, imgH = processRetVal
+        imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
+  except StopIteration as e:
+    print(e)
+    return
+
   finally:
     for key, val in imgStorage.items():
       if val is None:
