@@ -1,3 +1,4 @@
+from time import time
 import cv2
 from pathlib import Path, PurePosixPath
 
@@ -12,6 +13,7 @@ SHOWNAME = "main"
 PAD = 50
 ZOOMRANGE = 300
 INFORANGE = 200
+
 HISTORY_SHOW_LEGNTH = 9
 CONFIG = "src/model/golf_mobilenetv2_256x192.py"
 WEIGHT = "src/model/best.pth"
@@ -44,11 +46,14 @@ def oneImageProcess(modelHelper, imgPath, value, preLabel):
   
   xy = eventHandler.xy
 
+  startTime = time()
   while(True):
     outputMat = img.copy()
     key = cv2.waitKey(10)
 
     if (retVal := eventHandler.applyKeys(key)) is not None:
+      if (time()-startTime) <= 1:
+        continue
       return retVal
 
     putTextHistoryList(outputMat, HISTORY_SHOW_LEGNTH, 
@@ -77,15 +82,11 @@ def oneImageProcess(modelHelper, imgPath, value, preLabel):
 
     cv2.imshow(SHOWNAME ,outputMat)
 
-# ROOT = Path("data/input/outdoor_amateur_bad") # 1178
-# ROOT = Path("data/input/outdoor_amateur_normal") # valid 7492
-ROOT = Path("data/input/outdoor_amateur_worst") # 866
-# ROOT = Path("data/input/outdoor_pro_best") # 9601
-COCOJSON, BBOXJSON = "coco.json", "bbox.json"
-# COCOJSON, BBOXJSON = "val.json", "valbbox.json"
+COCOJSON, BBOXJSON = "val.json", "valbbox.json"
+ROOT = Path("data/input/outdoor_amateur_normal") # valid 7492
 
-# 남은 라벨 80000개정도
-# pre라벨링된건 20000개
+# COCOJSON, BBOXJSON = "coco.json", "bbox.json"
+# ROOT = Path("data/input/outdoor_pro_best") # 9601
 
 def checkHaveLabel(preLabel):
   for v in preLabel.values():
@@ -93,33 +94,39 @@ def checkHaveLabel(preLabel):
       return True
   return False
 
-from src.json_reader import *
+checkCnt = False
+
 def main():
   modelHelper = ModelHelper(CONFIG,WEIGHT, modelWidth=MODELWIDTH, modelHeight=MODELHEIGHT, device=DEVICE)
   cocoDict = COCO_dict(COCOJSON, BBOXJSON)
   imgStorage = ImagePointerDict(ROOT)
+  cnt=0
   try:
     isNext = True
-
     while(True):
       nextPath, value = imgStorage.next() if isNext else imgStorage.back()
       preLabel = getLabelFromJson(getJsonPathByImgPath(nextPath))
       
-      if checkHaveLabel(preLabel):    
+      if checkHaveLabel(preLabel):
+        cnt+=1
+        if checkCnt:
+          continue    
         isNext, processRetVal = oneImageProcess(modelHelper, nextPath, value, preLabel)
 
         if processRetVal is None:
           imgStorage.passIdx(nextPath)
           continue
 
-        print(imgStorage.curIdx, nextPath)
+        print(imgStorage.curIdx, cnt, nextPath)
         imagePointer, imgW, imgH = processRetVal
         imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
   except StopIteration as e:
-    print(e)
     return
 
   finally:
+    if checkCnt:
+      print(cnt)
+      exit(0)
     for key, val in imgStorage.items():
       if val is None:
         moveFile(key, rootDir="data/pass")
