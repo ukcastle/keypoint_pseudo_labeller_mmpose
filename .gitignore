@@ -130,5 +130,5 @@ dmypy.json
 mmpose
 data
 src/model
-.vscode/sftp.json
+.vscode/*
 *.onnx
