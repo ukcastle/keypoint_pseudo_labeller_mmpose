@@ -132,5 +132,4 @@ data
 src/model
 .vscode/*
 *.onnx
-input/*
-output/*
+video/*
