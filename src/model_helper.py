@@ -93,11 +93,11 @@ class ModelHelper:
 
     return output[0].numpy().tolist()
 
-  def inferenceModel(self, img, bbox):
-
+  def inferenceModel(self, img, bbox, cvtColor = True):
     x1,y1,x2,y2 = bbox
     cropImg = img[y1:y2, x1:x2]
-    cropImg = cv2.cvtColor(cropImg, cv2.COLOR_BGR2RGB)
+    if cvtColor:
+      cropImg = cv2.cvtColor(cropImg, cv2.COLOR_BGR2RGB)
     cropImg, leftPad, topPad, resizeRatio = self.resizeWithLetterBox(cropImg)
     inputTensor, meta = self.makeInput(cropImg)
     output = self.inference(inputTensor, meta)
