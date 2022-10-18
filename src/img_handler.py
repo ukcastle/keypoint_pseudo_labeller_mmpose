@@ -80,7 +80,7 @@ def drawKeyPointDot(img, outputList, radius = 1):
   
   return dst
 # @timeit
-def drawSkeleton(img, outputList, skeletons, viewLevel=2, curIdx = None, thickness = 1):
+def drawSkeleton(img, outputList, skeletons, viewLevel=2, curIdx = None, thickness = 1, thresh = 0.0):
   dst = img.copy()
   for startIdx, endIdx, color in skeletons:
     if viewLevel == 0:
@@ -91,6 +91,8 @@ def drawSkeleton(img, outputList, skeletons, viewLevel=2, curIdx = None, thickne
     end = outputList[endIdx][:2]
     if 0 in [outputList[x][2] for x in (startIdx, endIdx)]:
       continue
+    if thresh > 0.0 and (outputList[startIdx][2] < thresh or outputList[endIdx][2] < thresh):
+      continue      
     cv2.line(dst, start, end, color, thickness)
   return dst
 
