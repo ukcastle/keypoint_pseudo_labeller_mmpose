@@ -32,9 +32,9 @@ class EventHandler:
       return True, (self.imagePointer, self.imgW, self.imgH)
     elif key==ord("b"):
       return False, (self.imagePointer, self.imgW, self.imgH)
-    elif key==ord("a"):
-      self.imagePointer.changeVis()
     elif key==ord("s"):
+      self.imagePointer.changeVis()
+    elif key==ord("a"):
       self.imagePointer.changeVis(absVal=2)
     elif key==ord("p"):
       return True, None
