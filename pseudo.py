@@ -1,7 +1,7 @@
 from time import time
 import cv2
 from pathlib import Path, PurePosixPath
-
+from icecream import ic
 from src.data_reader import drawBbox, moveFile
 from src.img_handler import *
 from src.model_helper import ModelHelper, KEYPOINTS
@@ -15,13 +15,17 @@ ZOOMRANGE = 300
 INFORANGE = 200
 
 HISTORY_SHOW_LEGNTH = 9
-CONFIG = "src/model/golf_mobilenetv2_256x192.py"
-WEIGHT = "src/model/best.pth"
+MODEL_ROOT = "hr32"
+# CONFIG = f"src/model/{MODEL_ROOT}/golf_mobilenetv2_256x192.py"
+CONFIG = f"src/model/{MODEL_ROOT}/golf_hrnet_w32_coco_256x192.py"
+WEIGHT = f"src/model/{MODEL_ROOT}/best.pth"
 SKELETONS = getSkeletons()
 MODELWIDTH = 192
 MODELHEIGHT = 256
 DEVICE = "cuda:1"
 
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 def oneImageProcess(modelHelper, imgPath, value, preLabel):
   img = cv2.imread(imgPath.as_posix())
   if value is None:
@@ -52,7 +56,7 @@ def oneImageProcess(modelHelper, imgPath, value, preLabel):
     key = cv2.waitKey(10)
 
     if (retVal := eventHandler.applyKeys(key)) is not None:
-      if (time()-startTime) <= 1:
+      if (time()-startTime) <= 0.5:
         continue
       return retVal
 
@@ -61,7 +65,7 @@ def oneImageProcess(modelHelper, imgPath, value, preLabel):
       imgW, imgH, ZOOMRANGE)
 
     putTextOutputInfo(outputMat, imagePointer, 
-      KEYPOINTS, imgW+ZOOMRANGE, int(imgH/15))
+      KEYPOINTS, imgW+ZOOMRANGE, int(imgH/16))
     
     outputMat = drawKeyPointDot(outputMat, imagePointer())
     noDrawMat = outputMat.copy()
@@ -82,11 +86,11 @@ def oneImageProcess(modelHelper, imgPath, value, preLabel):
 
     cv2.imshow(SHOWNAME ,outputMat)
 
-COCOJSON, BBOXJSON = "val.json", "valbbox.json"
-ROOT = Path("data/input/outdoor_amateur_normal") # valid 7492
+# COCOJSON, BBOXJSON = "val.json", "valbbox.json"
+# ROOT = Path("data/input/outdoor_amateur_normal") # valid 5716
 
-# COCOJSON, BBOXJSON = "coco.json", "bbox.json"
-# ROOT = Path("data/input/outdoor_pro_best") # 9601
+COCOJSON, BBOXJSON = "coco.json", "bbox.json"
+ROOT = Path("data/input/outdoor_pro_best") # 8501
 
 def checkHaveLabel(preLabel):
   for v in preLabel.values():
@@ -115,9 +119,10 @@ def main():
 
         if processRetVal is None:
           imgStorage.passIdx(nextPath)
+          cnt-=1
           continue
 
-        print(imgStorage.curIdx, cnt, nextPath)
+        ic(imgStorage.curIdx, cnt, nextPath)
         imagePointer, imgW, imgH = processRetVal
         imgStorage.updateDict(imagePointer.imgName , imagePointer, imgW, imgH)
   except StopIteration as e:
@@ -125,7 +130,7 @@ def main():
 
   finally:
     if checkCnt:
-      print(cnt)
+      ic(cnt)
       exit(0)
     for key, val in imgStorage.items():
       if val is None:
