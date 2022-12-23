@@ -3,6 +3,8 @@ from .model_helper import KEYPOINTS
 import json
 from .img_handler import getKeyDict
 IDX_MATCH = {
+  "head"          : 0,
+  "neck"          : 1,
   "right_shoulder": 3,
   "left_shoulder" : 4,
   "right_elbow"   : 5,
