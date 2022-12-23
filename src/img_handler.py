@@ -1,6 +1,8 @@
 import cv2
 from src.util import timeit
-
+with open("src/define.yaml", "r") as f:
+  import yaml
+  KEYPOINTS = yaml.load(f, Loader=yaml.FullLoader)["keypoints"]
 def initStatus(img, imgW, imgH, zoomRange, infoRange):
   img = cv2.copyMakeBorder(img, 0, 0, 0, zoomRange+infoRange, cv2.BORDER_CONSTANT) # 정보창
   cv2.line(img, (imgW,zoomRange), (imgW+zoomRange, zoomRange), (255,255,255), 2) # 구분선
@@ -20,7 +22,7 @@ def putTextHistoryList(outputMat, historyLength, txtList, imgW, imgH, zoomRange)
       cv2.FONT_HERSHEY_PLAIN, 1, color)
 
 def putTextOutputInfo(outputMat, imagePointer, keyPoints, width, height):
-  for i in range(15):
+  for i in range(KEYPOINTS.__len__()):
     color = (0,0,255) if i==imagePointer.curSelectIdx else (255,255,255)
     cv2.putText(outputMat, f"{keyPoints[i]}", (width+10, height*(i)+15), 
       cv2.FONT_HERSHEY_PLAIN, 1, color)

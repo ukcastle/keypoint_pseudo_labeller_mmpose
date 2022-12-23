@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 from icecream import ic
 from src.data_reader import drawBbox, moveFile
 from src.img_handler import *
-from src.model_helper import ModelHelper, KEYPOINTS
+from src.model_helper import ModelHelper
 from src.point import ImagePointer, ImagePointerDict
 from src.coco_writer import COCO_dict
 from src.event_handler import EventHandler
@@ -13,6 +13,10 @@ SHOWNAME = "main"
 PAD = 50
 ZOOMRANGE = 300
 INFORANGE = 200
+
+with open("src/define.yaml", "r") as f:
+  import yaml
+  KEYPOINTS = yaml.load(f, Loader=yaml.FullLoader)["keypoints"]
 
 HISTORY_SHOW_LEGNTH = 9
 MODEL_ROOT = "hr32"

@@ -1,9 +1,7 @@
 from pathlib import Path
-from .model_helper import KEYPOINTS
 from .img_handler import getSkeletons
 import json
 from datetime import datetime
-
 class COCO_dict(dict):
   def __init__(self, cocoPath, bboxPath, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -55,6 +53,10 @@ class COCO_dict(dict):
     return [[s,e] for s,e,_ in getSkeletons()]
 
   def updateCategories(self):
+    import yaml
+    with open("src/define.yaml", "r") as f:
+      KEYPOINTS = yaml.load(f, Loader=yaml.FullLoader)["keypoints"]
+    
     self.update({
       "categories" : [{
         "supercategory": "person",

@@ -1,10 +1,13 @@
 from math import sqrt
 from pathlib import Path
 from .img_handler import getKeyDict
-from src.model_helper import KEYPOINTS
 from .model.custom_golf import dataset_info
 VISDICT = {0:"not exist", 1:"invisible", 2:"visible"}
 KEYDICT = getKeyDict()
+
+with open("src/define.yaml", "r") as f:
+  import yaml
+  KEYPOINTS = yaml.load(f, Loader=yaml.FullLoader)["keypoints"]
 class ImagePointer:
   def __init__(self, outputList, bbox, imgName) -> None:
     self.imgName = imgName

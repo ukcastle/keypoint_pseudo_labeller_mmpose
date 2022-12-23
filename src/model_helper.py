@@ -3,23 +3,6 @@ import torch
 from mmpose.apis import init_pose_model
 from mmpose.core.bbox import bbox_xywh2cs
 import torchvision
-KEYPOINTS = [
-          "left_shoulder",
-          "right_shoulder",
-          "left_elbow",
-          "right_elbow",
-          "left_wrist",
-          "right_wrist",
-          "left_hip",
-          "right_hip",
-          "left_knee",
-          "right_knee",
-          "left_ankle",
-          "right_ankle",
-          "grip",
-          "shaft_end",
-          "club_head" #총 15개
-        ]
 
 from src.util import timeit
 

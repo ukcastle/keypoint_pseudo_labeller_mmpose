@@ -1,7 +1,9 @@
 from pathlib import Path
-from .model_helper import KEYPOINTS
 import json
 from .img_handler import getKeyDict
+with open("src/define.yaml", "r") as f:
+  import yaml
+  KEYPOINTS = yaml.load(f, Loader=yaml.FullLoader)["keypoints"]
 IDX_MATCH = {
   "head"          : 0,
   "neck"          : 1,
